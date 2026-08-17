@@ -37,7 +37,7 @@ def test_model_record_schema_rejects_unknown_fields() -> None:
         "deployment_context": "Internal underwriting service",
         "intended_users": ["credit-risk-team"],
         "prohibited_uses": ["fully-autonomous-decline"],
-        "unexpected_security_relevant_field": true,
+        "unexpected_security_relevant_field": True,
     }
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(payload, schema)
