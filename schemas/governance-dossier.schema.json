@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/governance-dossier.schema.json",
+  "title": "ModelRiskOps Governance Dossier",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id", "model_id", "version_id", "governance_state", "governance_path_complete", "conditions", "gaps", "entries", "manifest_digest"],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "version_id": {"type": "string", "minLength": 1},
+    "governance_state": {"enum": ["approved", "approved_with_conditions", "rejected", "incomplete", "revalidation_required"]},
+    "governance_path_complete": {"type": "boolean"},
+    "conditions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "gaps": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_type", "artifact_id", "digest", "canonical_payload"],
+        "properties": {
+          "artifact_type": {"type": "string", "minLength": 1},
+          "artifact_id": {"type": "string", "minLength": 1},
+          "digest": {"$ref": "#/$defs/sha256"},
+          "canonical_payload": {"type": "string", "minLength": 2}
+        }
+      }
+    },
+    "manifest_digest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
