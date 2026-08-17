@@ -56,6 +56,14 @@ from .governance import (
     derive_revalidation_requirement,
     resolve_approval,
 )
+from .dossier import (
+    DossierEntry,
+    DossierGovernanceState,
+    GovernanceDossier,
+    build_governance_dossier,
+    dossier_from_dict,
+    verify_governance_dossier,
+)
 
 __all__ = [
     "canonical_json",
@@ -107,6 +115,12 @@ __all__ = [
     "derive_approval_requirement",
     "derive_revalidation_requirement",
     "resolve_approval",
+    "DossierEntry",
+    "DossierGovernanceState",
+    "GovernanceDossier",
+    "build_governance_dossier",
+    "dossier_from_dict",
+    "verify_governance_dossier",
 ]
 
-__version__ = "0.1.0.dev4"
+__version__ = "0.1.0.dev5"
