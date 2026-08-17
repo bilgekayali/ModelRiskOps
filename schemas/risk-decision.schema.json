@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/risk-decision.schema.json",
+  "title": "ModelRiskOps Risk Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id",
+    "model_id",
+    "version_id",
+    "model_digest",
+    "model_version_digest",
+    "policy_digest",
+    "inherent_score",
+    "inherent_tier",
+    "control_credit",
+    "residual_score",
+    "residual_tier",
+    "contributions",
+    "requirements"
+  ],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "version_id": {"type": "string", "minLength": 1},
+    "model_digest": {"$ref": "#/$defs/sha256"},
+    "model_version_digest": {"$ref": "#/$defs/sha256"},
+    "policy_digest": {"$ref": "#/$defs/sha256"},
+    "inherent_score": {"type": "integer", "minimum": 0},
+    "inherent_tier": {"$ref": "#/$defs/tier"},
+    "control_credit": {"type": "integer", "minimum": 0},
+    "residual_score": {"type": "integer", "minimum": 0},
+    "residual_tier": {"$ref": "#/$defs/tier"},
+    "contributions": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["factor", "level", "weight", "points"],
+        "properties": {
+          "factor": {"$ref": "#/$defs/factor"},
+          "level": {"type": "integer", "minimum": 0, "maximum": 3},
+          "weight": {"type": "integer", "minimum": 1, "maximum": 5},
+          "points": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "tier": {"enum": ["low", "medium", "high", "critical"]},
+    "factor": {
+      "enum": [
+        "decision_impact",
+        "customer_financial_impact",
+        "autonomy",
+        "complexity",
+        "data_sensitivity",
+        "external_dependency",
+        "explainability_need",
+        "regulatory_relevance",
+        "deployment_criticality"
+      ]
+    }
+  }
+}

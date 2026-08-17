@@ -12,6 +12,20 @@ from .models import (
     ModelVersion,
     transition_model,
 )
+from .risk import (
+    ControlObservation,
+    ControlStrength,
+    FactorLevel,
+    FactorName,
+    FactorWeight,
+    RiskDecision,
+    RiskFactor,
+    RiskPolicyProfile,
+    RiskTier,
+    TierRequirementSet,
+    assess_model_risk,
+    default_policy,
+)
 
 __all__ = [
     "canonical_json",
@@ -25,6 +39,18 @@ __all__ = [
     "ModelType",
     "ModelVersion",
     "transition_model",
+    "ControlObservation",
+    "ControlStrength",
+    "FactorLevel",
+    "FactorName",
+    "FactorWeight",
+    "RiskDecision",
+    "RiskFactor",
+    "RiskPolicyProfile",
+    "RiskTier",
+    "TierRequirementSet",
+    "assess_model_risk",
+    "default_policy",
 ]
 
-__version__ = "0.1.0.dev1"
+__version__ = "0.1.0.dev2"
