@@ -26,6 +26,19 @@ from .risk import (
     assess_model_risk,
     default_policy,
 )
+from .validation import (
+    FindingSeverity,
+    FindingStatus,
+    TestStatus,
+    ValidationConclusion,
+    ValidationDomain,
+    ValidationFinding,
+    ValidationPlan,
+    ValidationResolution,
+    ValidationTest,
+    build_validation_plan,
+    resolve_validation,
+)
 
 __all__ = [
     "canonical_json",
@@ -51,6 +64,17 @@ __all__ = [
     "TierRequirementSet",
     "assess_model_risk",
     "default_policy",
+    "FindingSeverity",
+    "FindingStatus",
+    "TestStatus",
+    "ValidationConclusion",
+    "ValidationDomain",
+    "ValidationFinding",
+    "ValidationPlan",
+    "ValidationResolution",
+    "ValidationTest",
+    "build_validation_plan",
+    "resolve_validation",
 ]
 
-__version__ = "0.1.0.dev2"
+__version__ = "0.1.0.dev3"
