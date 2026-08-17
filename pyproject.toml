@@ -20,7 +20,10 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9"]
+dev = [
+  "jsonschema>=4.23,<5",
+  "pytest>=8,<9",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
