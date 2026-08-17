@@ -1,6 +1,6 @@
 # ModelRiskOps
 
-**Evidence-backed model risk governance for regulated financial institutions.**
+**Open model risk governance, validation, lifecycle controls and verifiable evidence for AI/ML systems in regulated environments.**
 
 ## Summary
 
@@ -16,18 +16,21 @@ ModelRiskOps turns those governance relationships into deterministic, machine-re
 
 ## Current implementation — v0.1 foundation
 
-The first implementation boundary provides:
+The current foundation provides:
 
-- immutable, institution-scoped model records;
-- exact model-version provenance bound to artifact, code, data and configuration SHA-256 digests;
+- immutable, institution-scoped model records and exact model-version provenance bound to artifact, code, data and configuration SHA-256 digests;
 - explicit dependency references for datasets, systems, vendors, foundation models and critical services;
-- deterministic canonical JSON and evidence digests;
-- an in-memory reference registry that rejects conflicting model/version reuse;
-- closed lifecycle transitions that fail on unsupported state changes;
-- strict JSON Schemas for model records and model versions;
+- deterministic canonical JSON, evidence digests and strict machine-readable schemas;
+- closed lifecycle transitions and conflicting model/version reuse protection;
+- deterministic inherent/residual model-risk tiering from nine closed risk factors;
+- institution/policy-digest binding, bounded control credit and tier-derived governance requirements;
+- independent validation plans bound to the exact model version and risk decision;
+- structured validation tests and findings with segregation-of-duties controls;
+- fail-closed resolution semantics for incomplete mandatory tests and unresolved high/critical findings;
+- remediation evidence plus independent validator closure before findings can become closed;
 - Python 3.11/3.12/3.13 CI plus clean-wheel smoke testing.
 
-This is the inventory/provenance layer. Risk tiering, independent validation, approval/exception handling and governance dossiers are separate v0.1 milestones and are not implied by registration alone.
+Approval/exception handling, revalidation triggers and the final deterministic governance dossier remain separate v0.1 milestones. Registration, risk classification or validation evidence alone does not authorize deployment.
 
 ## Initial standards posture
 
