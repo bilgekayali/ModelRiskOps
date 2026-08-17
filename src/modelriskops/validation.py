@@ -204,6 +204,12 @@ def resolve_validation(
     test_ids = {test.test_id for test in plan.tests}
     if any(finding.test_id not in test_ids for finding in finding_list):
         raise GovernanceError("finding references a test outside the validation plan")
+    if any(
+        finding.status is FindingStatus.CLOSED
+        and finding.closed_by_validator_id != plan.validator_id
+        for finding in finding_list
+    ):
+        raise GovernanceError("finding closure must be performed by the plan validator")
 
     incomplete_mandatory = [
         test.test_id
