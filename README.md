@@ -4,39 +4,53 @@
 
 ## Summary
 
-ModelRiskOps is an open-source reference architecture for governing analytical, statistical, machine-learning, and AI models through a controlled lifecycle: inventory, risk classification, independent validation, approval, monitoring, change control, and retirement.
+ModelRiskOps is an open-source reference architecture for governing analytical, statistical, machine-learning, and AI models through a controlled lifecycle: inventory, risk classification, independent validation, approval, change/revalidation control, and evidence packaging.
 
 The project is designed for regulated and high-assurance environments. It is not a model-training framework, automated model validator, regulatory certification product, or substitute for independent expert judgement.
 
-## Purpose
+## v0.1.0 foundation
 
-Model risk is not limited to model accuracy. Institutions need to know which models exist, who owns and validates them, how material they are, what evidence supports approval, when they changed, whether limitations remain open, and when revalidation is required.
+ModelRiskOps v0.1.0 provides an executable governance-control foundation with:
 
-ModelRiskOps turns those governance relationships into deterministic, machine-readable evidence bound to exact model versions and policy state.
-
-## Current implementation — v0.1 foundation
-
-The current foundation provides:
-
-- immutable, institution-scoped model records and exact model-version provenance bound to artifact, code, data and configuration SHA-256 digests;
-- explicit dependency references for datasets, systems, vendors, foundation models and critical services;
-- deterministic canonical JSON, evidence digests and strict machine-readable schemas;
+- immutable institution-scoped model records and exact model-version provenance;
+- artifact, code, data and configuration SHA-256 bindings;
+- explicit dataset, system, vendor, foundation-model and critical-service dependencies;
+- deterministic canonical JSON and evidence digests;
 - closed lifecycle transitions and conflicting model/version reuse protection;
-- deterministic inherent/residual model-risk tiering from nine closed risk factors;
+- deterministic inherent/residual risk tiering from nine closed risk factors;
 - institution/policy-digest binding, bounded control credit and tier-derived governance requirements;
 - independent validation plans bound to the exact model version and risk decision;
-- structured validation tests and findings with segregation-of-duties controls;
-- fail-closed resolution semantics for incomplete mandatory tests and unresolved high/critical findings;
-- remediation evidence plus independent validator closure before findings can become closed;
-- role-bound approval requirements derived from current risk and validation state;
-- distinct-person approval enforcement for multi-role critical-risk decisions;
-- explicit approve, approve-with-conditions, reject and incomplete approval states;
+- structured validation tests/findings, remediation evidence and independent closure;
+- fail-closed handling of incomplete mandatory tests and unresolved high/critical findings;
+- role-bound approval requirements with distinct-person enforcement for critical multi-role approvals;
+- approve, approve-with-conditions, reject and incomplete approval resolutions;
 - bounded exception artifacts with exact scope, compensating controls, expiry and optional one-time semantics;
-- deterministic revalidation requirements for material model, data, configuration, dependency, business-use, policy or operational-control changes;
-- stale approval/exception protection through exact model-version, risk, validation and policy digest binding;
-- Python 3.11/3.12/3.13 CI plus clean-wheel smoke testing.
+- deterministic revalidation requirements for material model, data, configuration, dependency, business-use, policy and operational-control changes;
+- a self-contained governance dossier that re-resolves validation findings and approval votes before packaging;
+- canonical artifact payloads, per-artifact digests and a deterministic dossier manifest digest;
+- offline dossier verification and tamper detection;
+- strict Draft 2020-12 JSON Schemas for inventory, risk, validation, approval, exception, revalidation and dossier artifacts;
+- Python 3.11/3.12/3.13 CI, wheel build and clean-installed-wheel smoke tests.
 
-The final deterministic governance dossier and complete schema/release gate remain the last v0.1 milestone. Registration, risk classification, validation evidence or a partial approval package alone does not authorize deployment.
+## CLI
+
+After installation:
+
+```bash
+modelriskops digest-json document.json
+modelriskops validate-schema schema.json document.json
+modelriskops verify-dossier governance-dossier.json
+```
+
+`verify-dossier` performs local integrity verification only; it requires no network access.
+
+## Assurance and integrity boundary
+
+ModelRiskOps governance decisions bind to exact model/version, risk-policy, validation and approval evidence. Missing or stale inputs fail closed where the control requires them, and a material revalidation trigger prevents an existing dossier from representing a complete governance path.
+
+The v0.1.0 dossier provides **deterministic integrity and internal-consistency evidence**, not source authenticity or non-repudiation. It does not yet provide institution-owned signing keys, external immutable anchoring, trusted timestamping, production identity/IAM, or independent third-party attestation. Those are later hardening milestones.
+
+Registration, risk classification, validation, approval or dossier generation does not itself establish that a model is safe, unbiased, lawful, compliant, fit for production, or accepted by a regulator.
 
 ## Initial standards posture
 
@@ -53,15 +67,15 @@ These are governance and assurance design inputs, not claims of legal applicabil
 
 - Human accountability remains explicit.
 - Governance decisions bind to exact model/version and evidence digests rather than mutable names.
-- Missing or stale security/governance inputs fail closed where the control requires them.
+- Missing or stale governance inputs fail closed where required.
 - Historical evidence is preserved rather than silently overwritten.
-- Exceptions cannot silently replace mandatory validation or accountable approval paths.
+- Exceptions do not silently replace mandatory validation paths.
 - Regulatory mappings are separated from legal conclusions and certification claims.
-- The core governance library does not execute, train or deploy models.
+- The governance core does not execute, train or deploy models.
 
 ## Roadmap direction
 
-`v0.1 governance foundation (inventory/provenance → risk tiering → independent validation → approval/revalidation → deterministic dossier) → v0.2 monitoring & drift evidence → v0.3 signed governance/change control → v0.4 AI/GenAI overlays → v0.5 portfolio & third-party model risk → v0.6 assurance mappings → v0.7 tenant/crypto hardening → v0.8 production reference → v1.0 stable release`
+`v0.1 governance foundation → v0.2 monitoring & drift evidence → v0.3 signed governance/change control → v0.4 AI/GenAI overlays → v0.5 portfolio & third-party model risk → v0.6 assurance mappings → v0.7 tenant/crypto hardening → v0.8 production reference → v1.0 stable release`
 
 ## License
 
