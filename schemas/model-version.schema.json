@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/model-version.schema.json",
+  "title": "ModelRiskOps Model Version",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id",
+    "model_id",
+    "version_id",
+    "artifact_digest",
+    "code_digest",
+    "data_digest",
+    "config_digest",
+    "provenance_source",
+    "dependencies"
+  ],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "version_id": {"type": "string", "minLength": 1},
+    "artifact_digest": {"$ref": "#/$defs/sha256"},
+    "code_digest": {"$ref": "#/$defs/sha256"},
+    "data_digest": {"$ref": "#/$defs/sha256"},
+    "config_digest": {"$ref": "#/$defs/sha256"},
+    "provenance_source": {"type": "string", "minLength": 1},
+    "dependencies": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/dependency"}
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "identifier", "version", "digest"],
+      "properties": {
+        "kind": {
+          "enum": ["dataset", "system", "vendor", "foundation_model", "critical_service", "other"]
+        },
+        "identifier": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "digest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}
