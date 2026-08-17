@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/validation-plan.schema.json",
+  "title": "ModelRiskOps Validation Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id",
+    "model_id",
+    "version_id",
+    "model_digest",
+    "model_version_digest",
+    "risk_decision_digest",
+    "validator_id",
+    "validator_role",
+    "independent_from_owner",
+    "tests"
+  ],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "version_id": {"type": "string", "minLength": 1},
+    "model_digest": {"$ref": "#/$defs/sha256"},
+    "model_version_digest": {"$ref": "#/$defs/sha256"},
+    "risk_decision_digest": {"$ref": "#/$defs/sha256"},
+    "validator_id": {"type": "string", "minLength": 1},
+    "validator_role": {"type": "string", "minLength": 1},
+    "independent_from_owner": {"type": "boolean"},
+    "tests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/test"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["test_id", "domain", "mandatory", "status", "evidence_digest"],
+      "properties": {
+        "test_id": {"type": "string", "minLength": 1},
+        "domain": {
+          "enum": [
+            "conceptual_soundness",
+            "data_suitability",
+            "implementation_verification",
+            "performance",
+            "robustness",
+            "explainability",
+            "fairness",
+            "security",
+            "monitoring_readiness",
+            "limitations"
+          ]
+        },
+        "mandatory": {"type": "boolean"},
+        "status": {"enum": ["not_started", "pass", "fail", "not_applicable"]},
+        "evidence_digest": {
+          "oneOf": [
+            {"$ref": "#/$defs/sha256"},
+            {"type": "null"}
+          ]
+        }
+      }
+    }
+  }
+}

@@ -36,6 +36,6 @@ jobs:
           /tmp/modelriskops-wheel/bin/python -m pip install dist/*.whl
           /tmp/modelriskops-wheel/bin/python - <<'PY'
           import modelriskops
-          assert modelriskops.__version__ == "0.1.0.dev2"
+          assert modelriskops.__version__ == "0.1.0.dev3"
           print(modelriskops.__version__)
           PY
