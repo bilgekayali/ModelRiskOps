@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/validation-resolution.schema.json",
+  "title": "ModelRiskOps Validation Resolution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "plan_digest",
+    "conclusion",
+    "blocking_finding_ids",
+    "open_finding_ids",
+    "completed_test_ids",
+    "rationale"
+  ],
+  "properties": {
+    "plan_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "conclusion": {"enum": ["pass", "pass_with_conditions", "fail", "incomplete"]},
+    "blocking_finding_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "open_finding_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "completed_test_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "rationale": {"type": "string", "minLength": 1}
+  }
+}
