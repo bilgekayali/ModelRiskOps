@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/model-record.schema.json",
+  "title": "ModelRiskOps Model Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id",
+    "model_id",
+    "name",
+    "owner_id",
+    "business_use",
+    "model_type",
+    "lifecycle_state",
+    "deployment_context",
+    "intended_users",
+    "prohibited_uses"
+  ],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "owner_id": {"type": "string", "minLength": 1},
+    "business_use": {"type": "string", "minLength": 1},
+    "model_type": {
+      "enum": ["analytical", "statistical", "machine_learning", "ai", "generative_ai", "vendor", "other"]
+    },
+    "lifecycle_state": {
+      "enum": ["proposed", "development", "validation", "approved", "deployed", "suspended", "retired"]
+    },
+    "deployment_context": {"type": "string", "minLength": 1},
+    "intended_users": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "prohibited_uses": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}
