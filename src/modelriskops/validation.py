@@ -118,6 +118,8 @@ class ValidationFinding:
             raise GovernanceError("finding evidence_digest must be SHA-256")
         if self.remediation_digest is not None and not _is_digest(self.remediation_digest):
             raise GovernanceError("remediation_digest must be SHA-256")
+        if self.status is FindingStatus.REMEDIATED and self.remediation_digest is None:
+            raise GovernanceError("remediated findings require remediation evidence")
         if self.status is FindingStatus.CLOSED:
             if self.remediation_digest is None or not self.closed_by_validator_id:
                 raise GovernanceError("closed findings require remediation evidence and validator closure")
@@ -219,6 +221,9 @@ def resolve_validation(
     failed_mandatory = [
         test.test_id for test in plan.tests if test.mandatory and test.status is TestStatus.FAIL
     ]
+    failed_optional = [
+        test.test_id for test in plan.tests if not test.mandatory and test.status is TestStatus.FAIL
+    ]
     open_findings = [finding for finding in finding_list if finding.status is not FindingStatus.CLOSED]
     blocking = [
         finding
@@ -232,9 +237,9 @@ def resolve_validation(
     elif failed_mandatory or blocking:
         conclusion = ValidationConclusion.FAIL
         rationale = "Mandatory validation failure or blocking finding remains unresolved."
-    elif open_findings:
+    elif failed_optional or open_findings:
         conclusion = ValidationConclusion.PASS_WITH_CONDITIONS
-        rationale = "Validation completed with non-blocking open findings."
+        rationale = "Validation completed with non-blocking failed tests or open findings."
     else:
         conclusion = ValidationConclusion.PASS
         rationale = "All mandatory validation tests completed without unresolved findings."
