@@ -284,7 +284,15 @@ def resolve_approval(
     )
 
 
-_NON_EXCEPTIONABLE = frozenset({"accountable_owner", "current_inventory", "independent_validation"})
+_NON_EXCEPTIONABLE = frozenset(
+    {
+        "accountable_owner",
+        "current_inventory",
+        "independent_validation",
+        "senior_risk_approval",
+        "executive_risk_acceptance",
+    }
+)
 
 
 def create_exception(

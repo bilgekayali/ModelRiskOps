@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/approval.schema.json",
+  "title": "ModelRiskOps Approval Artifact",
+  "oneOf": [
+    {"$ref": "#/$defs/requirement"},
+    {"$ref": "#/$defs/vote"},
+    {"$ref": "#/$defs/resolution"}
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["institution_id", "model_id", "version_id", "model_version_digest", "risk_decision_digest", "validation_plan_digest", "validation_resolution_digest", "required_roles"],
+      "properties": {
+        "institution_id": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "version_id": {"type": "string", "minLength": 1},
+        "model_version_digest": {"$ref": "#/$defs/sha256"},
+        "risk_decision_digest": {"$ref": "#/$defs/sha256"},
+        "validation_plan_digest": {"$ref": "#/$defs/sha256"},
+        "validation_resolution_digest": {"$ref": "#/$defs/sha256"},
+        "required_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "vote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_digest", "approver_id", "approver_role", "decision", "conditions"],
+      "properties": {
+        "requirement_digest": {"$ref": "#/$defs/sha256"},
+        "approver_id": {"type": "string", "minLength": 1},
+        "approver_role": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["approve", "approve_with_conditions", "reject"]},
+        "conditions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_digest", "state", "vote_digests", "missing_roles", "conditions"],
+      "properties": {
+        "requirement_digest": {"$ref": "#/$defs/sha256"},
+        "state": {"enum": ["approved", "approved_with_conditions", "rejected", "incomplete"]},
+        "vote_digests": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}},
+        "missing_roles": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "conditions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}
