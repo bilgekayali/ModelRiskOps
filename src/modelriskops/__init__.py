@@ -39,6 +39,23 @@ from .validation import (
     build_validation_plan,
     resolve_validation,
 )
+from .governance import (
+    ApprovalDecision,
+    ApprovalRequirement,
+    ApprovalResolution,
+    ApprovalState,
+    ApprovalVote,
+    ExceptionArtifact,
+    RevalidationRequirement,
+    RevalidationTrigger,
+    assert_approval_requirement_current,
+    assert_exception_valid,
+    create_approval_vote,
+    create_exception,
+    derive_approval_requirement,
+    derive_revalidation_requirement,
+    resolve_approval,
+)
 
 __all__ = [
     "canonical_json",
@@ -75,6 +92,21 @@ __all__ = [
     "ValidationTest",
     "build_validation_plan",
     "resolve_validation",
+    "ApprovalDecision",
+    "ApprovalRequirement",
+    "ApprovalResolution",
+    "ApprovalState",
+    "ApprovalVote",
+    "ExceptionArtifact",
+    "RevalidationRequirement",
+    "RevalidationTrigger",
+    "assert_approval_requirement_current",
+    "assert_exception_valid",
+    "create_approval_vote",
+    "create_exception",
+    "derive_approval_requirement",
+    "derive_revalidation_requirement",
+    "resolve_approval",
 ]
 
-__version__ = "0.1.0.dev3"
+__version__ = "0.1.0.dev4"

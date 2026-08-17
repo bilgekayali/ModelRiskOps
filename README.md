@@ -28,9 +28,15 @@ The current foundation provides:
 - structured validation tests and findings with segregation-of-duties controls;
 - fail-closed resolution semantics for incomplete mandatory tests and unresolved high/critical findings;
 - remediation evidence plus independent validator closure before findings can become closed;
+- role-bound approval requirements derived from current risk and validation state;
+- distinct-person approval enforcement for multi-role critical-risk decisions;
+- explicit approve, approve-with-conditions, reject and incomplete approval states;
+- bounded exception artifacts with exact scope, compensating controls, expiry and optional one-time semantics;
+- deterministic revalidation requirements for material model, data, configuration, dependency, business-use, policy or operational-control changes;
+- stale approval/exception protection through exact model-version, risk, validation and policy digest binding;
 - Python 3.11/3.12/3.13 CI plus clean-wheel smoke testing.
 
-Approval/exception handling, revalidation triggers and the final deterministic governance dossier remain separate v0.1 milestones. Registration, risk classification or validation evidence alone does not authorize deployment.
+The final deterministic governance dossier and complete schema/release gate remain the last v0.1 milestone. Registration, risk classification, validation evidence or a partial approval package alone does not authorize deployment.
 
 ## Initial standards posture
 
@@ -49,6 +55,7 @@ These are governance and assurance design inputs, not claims of legal applicabil
 - Governance decisions bind to exact model/version and evidence digests rather than mutable names.
 - Missing or stale security/governance inputs fail closed where the control requires them.
 - Historical evidence is preserved rather than silently overwritten.
+- Exceptions cannot silently replace mandatory validation or accountable approval paths.
 - Regulatory mappings are separated from legal conclusions and certification claims.
 - The core governance library does not execute, train or deploy models.
 
