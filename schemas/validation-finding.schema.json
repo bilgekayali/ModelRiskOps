@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/validation-finding.schema.json",
+  "title": "ModelRiskOps Validation Finding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finding_id",
+    "test_id",
+    "severity",
+    "status",
+    "evidence_digest",
+    "description",
+    "remediation_digest",
+    "closed_by_validator_id"
+  ],
+  "properties": {
+    "finding_id": {"type": "string", "minLength": 1},
+    "test_id": {"type": "string", "minLength": 1},
+    "severity": {"enum": ["low", "medium", "high", "critical"]},
+    "status": {"enum": ["open", "remediated", "closed"]},
+    "evidence_digest": {"$ref": "#/$defs/sha256"},
+    "description": {"type": "string", "minLength": 1},
+    "remediation_digest": {
+      "oneOf": [
+        {"$ref": "#/$defs/sha256"},
+        {"type": "null"}
+      ]
+    },
+    "closed_by_validator_id": {
+      "type": ["string", "null"],
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
