@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/revalidation-requirement.schema.json",
+  "title": "ModelRiskOps Revalidation Requirement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id", "model_id", "before_state_digest", "after_state_digest", "triggers", "rationale"],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "before_state_digest": {"$ref": "#/$defs/sha256"},
+    "after_state_digest": {"$ref": "#/$defs/sha256"},
+    "triggers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["model_record", "artifact", "code", "data", "config", "dependency", "business_use", "deployment_context", "policy_profile", "monitoring_deterioration", "control_deterioration"]
+      }
+    },
+    "rationale": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
