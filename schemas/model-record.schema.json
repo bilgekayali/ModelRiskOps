@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ModelRiskOps Model Record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "institution_id", "model_id", "name", "family", "primary_use", "owner_id", "business_unit", "lifecycle_status", "model_version", "production_use", "registered_at"],
+  "properties": {
+    "schema_version": {"const": "modelriskops.model-record.v1"},
+    "institution_id": {"type": "string", "minLength": 1, "maxLength": 256},
+    "model_id": {"type": "string", "minLength": 1, "maxLength": 256},
+    "name": {"type": "string", "minLength": 1, "maxLength": 256},
+    "family": {"enum": ["statistical", "machine_learning", "generative_ai", "rule_based", "other"]},
+    "primary_use": {"type": "string", "minLength": 1, "maxLength": 512},
+    "owner_id": {"type": "string", "minLength": 1, "maxLength": 256},
+    "business_unit": {"type": "string", "minLength": 1, "maxLength": 256},
+    "lifecycle_status": {"enum": ["proposed", "development", "validation", "approved", "production", "restricted", "retired"]},
+    "model_version": {"type": "string", "minLength": 1, "maxLength": 256},
+    "production_use": {"type": "boolean"},
+    "registered_at": {"type": "string", "format": "date-time"}
+  }
+}
