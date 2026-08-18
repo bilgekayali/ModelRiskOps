@@ -62,6 +62,19 @@ def test_signed_governance_envelope_round_trip_and_tamper_detection() -> None:
         at_time=160,
     ) == envelope.evidence_digest
 
+    with pytest.raises(GovernanceError, match="evaluation time cannot precede"):
+        verify_signed_envelope(
+            artifact,
+            envelope,
+            registry,
+            institution_id="bank-a",
+            model_id="credit-risk",
+            version_id="v2",
+            artifact_type="approval_vote",
+            signing_purpose="approve_model",
+            at_time=149,
+        )
+
     with pytest.raises(GovernanceError, match="artifact digest"):
         verify_signed_envelope(
             {"decision": "reject", "evidence": "x" * 64},
