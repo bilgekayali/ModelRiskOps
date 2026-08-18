@@ -34,7 +34,7 @@ def _roles(values: Iterable[str]) -> tuple[str, ...]:
 def _decode_b64(name: str, value: str, *, expected_length: int) -> bytes:
     try:
         decoded = base64.b64decode(value, validate=True)
-    except Exception as exc:  # binascii.Error and malformed input
+    except Exception as exc:
         raise GovernanceError(f"{name} must be valid base64") from exc
     if len(decoded) != expected_length:
         raise GovernanceError(f"{name} must decode to {expected_length} bytes")
@@ -116,13 +116,8 @@ class SignedGovernanceEnvelope:
 
     def __post_init__(self) -> None:
         for name in (
-            "institution_id",
-            "model_id",
-            "artifact_type",
-            "signer_id",
-            "signer_role",
-            "key_id",
-            "signing_purpose",
+            "institution_id", "model_id", "artifact_type", "signer_id",
+            "signer_role", "key_id", "signing_purpose",
         ):
             object.__setattr__(self, name, _required_text(name, getattr(self, name)))
         if self.version_id is not None:
@@ -178,6 +173,8 @@ class SigningKeyRegistry:
         return self._revocations.get((institution_id, key_id))
 
     def assert_key_active(self, key: VerificationKeyRecord, *, at_time: int) -> None:
+        if isinstance(at_time, bool) or not isinstance(at_time, int) or at_time < 0:
+            raise GovernanceError("key evaluation time must be a non-negative integer timestamp")
         if at_time < key.valid_from:
             raise GovernanceError("verification key is not yet valid")
         if key.valid_until is not None and at_time >= key.valid_until:
@@ -187,72 +184,47 @@ class SigningKeyRegistry:
             raise GovernanceError("verification key is revoked")
 
     def snapshot_digest(self) -> str:
-        return sha256_digest(
-            {
-                "keys": sorted(key.evidence_digest for key in self._keys.values()),
-                "revocations": sorted(item.evidence_digest for item in self._revocations.values()),
-            }
-        )
+        return sha256_digest({
+            "keys": sorted(key.evidence_digest for key in self._keys.values()),
+            "revocations": sorted(item.evidence_digest for item in self._revocations.values()),
+        })
 
 
 def public_key_base64_from_private_seed(private_key_seed: bytes) -> str:
     if not isinstance(private_key_seed, bytes) or len(private_key_seed) != 32:
         raise GovernanceError("private_key_seed must be exactly 32 bytes")
     public_bytes = Ed25519PrivateKey.from_private_bytes(private_key_seed).public_key().public_bytes(
-        Encoding.Raw,
-        PublicFormat.Raw,
+        Encoding.Raw, PublicFormat.Raw,
     )
     return base64.b64encode(public_bytes).decode("ascii")
 
 
-def _signature_payload(
-    artifact: Any,
-    *,
-    institution_id: str,
-    model_id: str,
-    version_id: str | None,
-    artifact_type: str,
-    signer_id: str,
-    signer_role: str,
-    key_id: str,
-    key_digest: str,
-    signing_purpose: str,
-    signed_at: int,
-) -> bytes:
-    return canonical_json(
-        {
-            "artifact": artifact,
-            "artifact_digest": sha256_digest(artifact),
-            "institution_id": institution_id,
-            "model_id": model_id,
-            "version_id": version_id,
-            "artifact_type": artifact_type,
-            "signer_id": signer_id,
-            "signer_role": signer_role,
-            "key_id": key_id,
-            "key_digest": key_digest,
-            "signing_purpose": signing_purpose,
-            "signed_at": signed_at,
-            "algorithm": "ed25519",
-        }
-    ).encode("utf-8")
+def _signature_payload(artifact: Any, *, institution_id: str, model_id: str,
+                       version_id: str | None, artifact_type: str, signer_id: str,
+                       signer_role: str, key_id: str, key_digest: str,
+                       signing_purpose: str, signed_at: int) -> bytes:
+    return canonical_json({
+        "artifact": artifact,
+        "artifact_digest": sha256_digest(artifact),
+        "institution_id": institution_id,
+        "model_id": model_id,
+        "version_id": version_id,
+        "artifact_type": artifact_type,
+        "signer_id": signer_id,
+        "signer_role": signer_role,
+        "key_id": key_id,
+        "key_digest": key_digest,
+        "signing_purpose": signing_purpose,
+        "signed_at": signed_at,
+        "algorithm": "ed25519",
+    }).encode("utf-8")
 
 
-def create_signed_envelope(
-    artifact: Any,
-    registry: SigningKeyRegistry,
-    key: VerificationKeyRecord,
-    *,
-    private_key_seed: bytes,
-    institution_id: str,
-    model_id: str,
-    version_id: str | None,
-    artifact_type: str,
-    signer_id: str,
-    signer_role: str,
-    signing_purpose: str,
-    signed_at: int,
-) -> SignedGovernanceEnvelope:
+def create_signed_envelope(artifact: Any, registry: SigningKeyRegistry,
+                           key: VerificationKeyRecord, *, private_key_seed: bytes,
+                           institution_id: str, model_id: str, version_id: str | None,
+                           artifact_type: str, signer_id: str, signer_role: str,
+                           signing_purpose: str, signed_at: int) -> SignedGovernanceEnvelope:
     registered = registry.key(key.institution_id, key.key_id)
     if registered.evidence_digest != key.evidence_digest:
         raise GovernanceError("signing key is not the registered key content")
@@ -265,49 +237,26 @@ def create_signed_envelope(
     registry.assert_key_active(key, at_time=signed_at)
     if public_key_base64_from_private_seed(private_key_seed) != key.public_key_base64:
         raise GovernanceError("private key does not match registered public verification key")
-
     payload = _signature_payload(
-        artifact,
-        institution_id=institution_id,
-        model_id=model_id,
-        version_id=version_id,
-        artifact_type=artifact_type,
-        signer_id=signer_id,
-        signer_role=signer_role,
-        key_id=key.key_id,
-        key_digest=key.evidence_digest,
-        signing_purpose=signing_purpose,
-        signed_at=signed_at,
+        artifact, institution_id=institution_id, model_id=model_id, version_id=version_id,
+        artifact_type=artifact_type, signer_id=signer_id, signer_role=signer_role,
+        key_id=key.key_id, key_digest=key.evidence_digest,
+        signing_purpose=signing_purpose, signed_at=signed_at,
     )
     signature = Ed25519PrivateKey.from_private_bytes(private_key_seed).sign(payload)
     return SignedGovernanceEnvelope(
-        institution_id=institution_id,
-        model_id=model_id,
-        version_id=version_id,
-        artifact_type=artifact_type,
-        artifact_digest=sha256_digest(artifact),
-        signer_id=signer_id,
-        signer_role=signer_role,
-        key_id=key.key_id,
-        key_digest=key.evidence_digest,
-        signing_purpose=signing_purpose,
-        signed_at=signed_at,
-        signature_base64=base64.b64encode(signature).decode("ascii"),
+        institution_id=institution_id, model_id=model_id, version_id=version_id,
+        artifact_type=artifact_type, artifact_digest=sha256_digest(artifact),
+        signer_id=signer_id, signer_role=signer_role, key_id=key.key_id,
+        key_digest=key.evidence_digest, signing_purpose=signing_purpose,
+        signed_at=signed_at, signature_base64=base64.b64encode(signature).decode("ascii"),
     )
 
 
-def verify_signed_envelope(
-    artifact: Any,
-    envelope: SignedGovernanceEnvelope,
-    registry: SigningKeyRegistry,
-    *,
-    institution_id: str,
-    model_id: str,
-    version_id: str | None,
-    artifact_type: str,
-    signing_purpose: str,
-    at_time: int | None = None,
-) -> str:
+def verify_signed_envelope(artifact: Any, envelope: SignedGovernanceEnvelope,
+                           registry: SigningKeyRegistry, *, institution_id: str,
+                           model_id: str, version_id: str | None, artifact_type: str,
+                           signing_purpose: str, at_time: int | None = None) -> str:
     if envelope.institution_id != institution_id or envelope.model_id != model_id:
         raise GovernanceError("signed envelope is bound to different institution/model scope")
     if envelope.version_id != version_id:
@@ -316,7 +265,6 @@ def verify_signed_envelope(
         raise GovernanceError("signed envelope has different artifact type or signing purpose")
     if envelope.artifact_digest != sha256_digest(artifact):
         raise GovernanceError("signed envelope artifact digest does not match exact artifact payload")
-
     key = registry.key(envelope.institution_id, envelope.key_id)
     if key.evidence_digest != envelope.key_digest:
         raise GovernanceError("signed envelope is bound to different verification-key content")
@@ -325,24 +273,18 @@ def verify_signed_envelope(
     if envelope.signer_role not in key.permitted_roles:
         raise GovernanceError("signed envelope signer role is outside registered key scope")
 
-    # Historical validity is always checked at signing time. Current-use callers may
-    # additionally require the key to remain active at a later evaluation time.
     registry.assert_key_active(key, at_time=envelope.signed_at)
     if at_time is not None:
+        if isinstance(at_time, bool) or not isinstance(at_time, int) or at_time < envelope.signed_at:
+            raise GovernanceError("signature evaluation time cannot precede signing time")
         registry.assert_key_active(key, at_time=at_time)
 
     payload = _signature_payload(
-        artifact,
-        institution_id=envelope.institution_id,
-        model_id=envelope.model_id,
-        version_id=envelope.version_id,
-        artifact_type=envelope.artifact_type,
-        signer_id=envelope.signer_id,
-        signer_role=envelope.signer_role,
-        key_id=envelope.key_id,
-        key_digest=envelope.key_digest,
-        signing_purpose=envelope.signing_purpose,
-        signed_at=envelope.signed_at,
+        artifact, institution_id=envelope.institution_id, model_id=envelope.model_id,
+        version_id=envelope.version_id, artifact_type=envelope.artifact_type,
+        signer_id=envelope.signer_id, signer_role=envelope.signer_role,
+        key_id=envelope.key_id, key_digest=envelope.key_digest,
+        signing_purpose=envelope.signing_purpose, signed_at=envelope.signed_at,
     )
     try:
         Ed25519PublicKey.from_public_bytes(
