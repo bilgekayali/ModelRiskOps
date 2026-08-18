@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.local/schemas/signed-governance-envelope.schema.json",
+  "title": "ModelRiskOps Signed Governance Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id", "model_id", "version_id", "artifact_type", "artifact_digest", "signer_id", "signer_role", "key_id", "key_digest", "signing_purpose", "signed_at", "signature_base64", "algorithm"],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "version_id": {"type": ["string", "null"], "minLength": 1},
+    "artifact_type": {"type": "string", "minLength": 1},
+    "artifact_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "signer_id": {"type": "string", "minLength": 1},
+    "signer_role": {"type": "string", "minLength": 1},
+    "key_id": {"type": "string", "minLength": 1},
+    "key_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "signing_purpose": {"type": "string", "minLength": 1},
+    "signed_at": {"type": "integer", "minimum": 0},
+    "signature_base64": {"type": "string", "minLength": 88, "maxLength": 88},
+    "algorithm": {"const": "ed25519"}
+  }
+}

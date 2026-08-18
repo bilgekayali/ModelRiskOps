@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.local/schemas/change-implementation.schema.json",
+  "title": "ModelRiskOps Change Implementation Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["change_id", "institution_id", "model_id", "after_version_id", "proposal_digest", "authorization_resolution_digest", "authorized_after_state_digest", "implemented_by_id", "implementation_evidence_digest", "implemented_at", "deployment_executed_by_modelriskops"],
+  "properties": {
+    "change_id": {"type": "string", "minLength": 1},
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "after_version_id": {"type": "string", "minLength": 1},
+    "proposal_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "authorization_resolution_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "authorized_after_state_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "implemented_by_id": {"type": "string", "minLength": 1},
+    "implementation_evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "implemented_at": {"type": "integer", "minimum": 0},
+    "deployment_executed_by_modelriskops": {"const": false}
+  }
+}
