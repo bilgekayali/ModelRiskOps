@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/rag-configuration.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id","model_id","version_id","rag_id","config_version","owner_id","corpus_id","corpus_version","corpus_digest","index_digest","embedding_model_id","embedding_model_version","embedding_model_digest","chunking_policy_digest","retrieval_policy_digest","source_set_digest","require_citations","registered_at"],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "model_id": {"type":"string","minLength":1},
+    "version_id": {"type":"string","minLength":1},
+    "rag_id": {"type":"string","minLength":1},
+    "config_version": {"type":"string","minLength":1},
+    "owner_id": {"type":"string","minLength":1},
+    "corpus_id": {"type":"string","minLength":1},
+    "corpus_version": {"type":"string","minLength":1},
+    "corpus_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "index_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "embedding_model_id": {"type":"string","minLength":1},
+    "embedding_model_version": {"type":"string","minLength":1},
+    "embedding_model_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "chunking_policy_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "retrieval_policy_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "source_set_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "require_citations": {"type":"boolean"},
+    "registered_at": {"type":"integer","minimum":0}
+  }
+}
