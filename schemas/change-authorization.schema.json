@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.local/schemas/change-authorization.schema.json",
+  "title": "ModelRiskOps Change Authorization Artifacts",
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "roleArray": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposal_digest", "institution_id", "model_id", "after_version_id", "materiality", "required_roles"],
+      "properties": {
+        "proposal_digest": {"$ref": "#/$defs/digest"},
+        "institution_id": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "after_version_id": {"type": "string", "minLength": 1},
+        "materiality": {"enum": ["non_material", "material"]},
+        "required_roles": {"$ref": "#/$defs/roleArray", "minItems": 1}
+      }
+    },
+    "vote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_digest", "proposal_digest", "approver_id", "approver_role", "decision", "rationale", "decided_at"],
+      "properties": {
+        "requirement_digest": {"$ref": "#/$defs/digest"},
+        "proposal_digest": {"$ref": "#/$defs/digest"},
+        "approver_id": {"type": "string", "minLength": 1},
+        "approver_role": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["authorize", "reject"]},
+        "rationale": {"type": "string", "minLength": 1},
+        "decided_at": {"type": "integer", "minimum": 0}
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_digest", "proposal_digest", "state", "vote_digests", "signature_digests", "missing_roles", "revalidation_requirement_digest", "approval_requirement_digest", "approval_resolution_digest", "resolved_at", "automated_deployment_authorized", "regulatory_approval_determined"],
+      "properties": {
+        "requirement_digest": {"$ref": "#/$defs/digest"},
+        "proposal_digest": {"$ref": "#/$defs/digest"},
+        "state": {"enum": ["authorized", "rejected", "incomplete"]},
+        "vote_digests": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/digest"}},
+        "signature_digests": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/digest"}},
+        "missing_roles": {"$ref": "#/$defs/roleArray"},
+        "revalidation_requirement_digest": {"anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]},
+        "approval_requirement_digest": {"anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]},
+        "approval_resolution_digest": {"anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]},
+        "resolved_at": {"type": "integer", "minimum": 0},
+        "automated_deployment_authorized": {"const": false},
+        "regulatory_approval_determined": {"const": false}
+      }
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/$defs/requirement"},
+    {"$ref": "#/$defs/vote"},
+    {"$ref": "#/$defs/resolution"}
+  ]
+}
