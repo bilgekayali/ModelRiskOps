@@ -78,6 +78,13 @@ def _finite(name: str, value: float) -> float:
     return result
 
 
+def _integer(name: str, value: int, *, minimum: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        comparator = "positive" if minimum == 1 else "non-negative"
+        raise GovernanceError(f"{name} must be a {comparator} integer")
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class MetricDefinition:
     metric_id: str
@@ -98,8 +105,7 @@ class MetricDefinition:
             raise GovernanceError("above-is-worse thresholds require warning < breach")
         if self.direction is ThresholdDirection.BELOW_IS_WORSE and not warning > breach:
             raise GovernanceError("below-is-worse thresholds require warning > breach")
-        if isinstance(self.min_samples, bool) or self.min_samples < 1:
-            raise GovernanceError("min_samples must be a positive integer")
+        _integer("min_samples", self.min_samples, minimum=1)
         if self.reference_digest is not None:
             _require_digest("reference_digest", self.reference_digest)
         if self.kind in _DRIFT_KINDS and self.reference_digest is None:
@@ -127,12 +133,9 @@ class MonitoringPlan:
             object.__setattr__(self, name, _required_text(name, getattr(self, name)))
         _require_digest("model_version_digest", self.model_version_digest)
         _require_digest("risk_decision_digest", self.risk_decision_digest)
-        if isinstance(self.cadence_seconds, bool) or self.cadence_seconds < 1:
-            raise GovernanceError("cadence_seconds must be a positive integer")
-        if (
-            isinstance(self.max_staleness_seconds, bool)
-            or self.max_staleness_seconds < self.cadence_seconds
-        ):
+        _integer("cadence_seconds", self.cadence_seconds, minimum=1)
+        _integer("max_staleness_seconds", self.max_staleness_seconds, minimum=1)
+        if self.max_staleness_seconds < self.cadence_seconds:
             raise GovernanceError("max_staleness_seconds must be at least cadence_seconds")
         if not self.metrics:
             raise GovernanceError("monitoring plan must define at least one metric")
@@ -165,13 +168,15 @@ class MonitoringObservation:
     def __post_init__(self) -> None:
         _require_digest("monitoring_plan_digest", self.monitoring_plan_digest)
         object.__setattr__(self, "metric_id", _required_text("metric_id", self.metric_id))
-        if self.window_start < 0 or self.window_end <= self.window_start:
-            raise GovernanceError("monitoring window must have a non-negative start and later end")
+        _integer("window_start", self.window_start, minimum=0)
+        _integer("window_end", self.window_end, minimum=1)
+        _integer("observed_at", self.observed_at, minimum=1)
+        if self.window_end <= self.window_start:
+            raise GovernanceError("monitoring window end must be after its start")
         if self.observed_at < self.window_end:
             raise GovernanceError("observed_at cannot precede the end of its monitoring window")
         object.__setattr__(self, "value", _finite("value", self.value))
-        if isinstance(self.sample_size, bool) or self.sample_size < 0:
-            raise GovernanceError("sample_size must be a non-negative integer")
+        _integer("sample_size", self.sample_size, minimum=0)
         _require_digest("source_evidence_digest", self.source_evidence_digest)
 
     @property
@@ -219,8 +224,7 @@ class MonitoringAssessment:
             "monitoring_plan_digest",
         ):
             _require_digest(name, getattr(self, name))
-        if self.as_of < 0:
-            raise GovernanceError("as_of must be non-negative")
+        _integer("as_of", self.as_of, minimum=0)
         metric_ids = tuple(item.metric_id for item in self.metric_assessments)
         if len(metric_ids) != len(set(metric_ids)):
             raise GovernanceError("metric assessments must be unique by metric_id")
@@ -228,6 +232,8 @@ class MonitoringAssessment:
             _require_digest("observation_digest", digest)
         if len(self.observation_digests) != len(set(self.observation_digests)):
             raise GovernanceError("observation_digests must be unique")
+        if not isinstance(self.revalidation_required, bool):
+            raise GovernanceError("revalidation_required must be boolean")
         expected_revalidation = self.state in {MonitoringState.BREACHED, MonitoringState.INCOMPLETE}
         if self.revalidation_required is not expected_revalidation:
             raise GovernanceError("revalidation_required is inconsistent with monitoring state")
@@ -353,8 +359,7 @@ def assess_monitoring(
     as_of: int,
 ) -> MonitoringAssessment:
     _assert_current(plan, version, risk)
-    if as_of < 0:
-        raise GovernanceError("as_of must be non-negative")
+    _integer("as_of", as_of, minimum=0)
 
     definitions = {metric.metric_id: metric for metric in plan.metrics}
     grouped: dict[str, list[MonitoringObservation]] = {metric_id: [] for metric_id in definitions}
