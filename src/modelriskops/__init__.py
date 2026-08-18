@@ -124,7 +124,9 @@ from .genai import (
     create_human_oversight_requirement,
 )
 from .genai_change import (
+    assert_genai_change_implementation_current,
     assert_genai_change_proposal_current,
+    create_genai_change_implementation_evidence,
     create_genai_model_change_proposal,
 )
 from .dossier import (
@@ -249,6 +251,8 @@ __all__ = [
     "create_human_oversight_decision",
     "create_genai_model_change_proposal",
     "assert_genai_change_proposal_current",
+    "create_genai_change_implementation_evidence",
+    "assert_genai_change_implementation_current",
     "DossierEntry",
     "DossierGovernanceState",
     "GovernanceDossier",
