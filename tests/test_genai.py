@@ -183,7 +183,7 @@ def test_genai_evaluation_is_deterministic_and_fail_closed() -> None:
     assert incomplete.state is GenAIEvaluationState.INCOMPLETE
     assert "missing_observation:harmful-content" in incomplete.gaps
 
-    stale = assess_genai_evaluation(plan, overlay, observations(plan, observed_at=10), evaluated_at=160)
+    stale = assess_genai_evaluation(plan, overlay, observations(plan, observed_at=120), evaluated_at=230)
     assert stale.state is GenAIEvaluationState.INCOMPLETE
 
     conflict = observations(plan) + (
