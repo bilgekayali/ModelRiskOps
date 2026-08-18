@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/genai-use-case.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["institution_id","model_id","version_id","use_case_id","owner_id","intended_users","prohibited_uses","output_handling","human_review_required","high_impact_use","permitted_tool_actions","registered_at"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},"model_id":{"type":"string","minLength":1},"version_id":{"type":"string","minLength":1},
+    "use_case_id":{"type":"string","minLength":1},"owner_id":{"type":"string","minLength":1},
+    "intended_users":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "prohibited_uses":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "output_handling":{"type":"string","minLength":1},"human_review_required":{"type":"boolean"},"high_impact_use":{"type":"boolean"},
+    "permitted_tool_actions":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "registered_at":{"type":"integer","minimum":0}
+  }
+}
