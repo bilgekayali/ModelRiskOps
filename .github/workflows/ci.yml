@@ -46,11 +46,21 @@ jobs:
           /tmp/modelriskops-wheel/bin/python -m pip install dist/*.whl
           /tmp/modelriskops-wheel/bin/python - <<'PY'
           import modelriskops
-          from modelriskops import SigningKeyRegistry, ChangeMateriality, build_signed_change_dossier
-          assert modelriskops.__version__ == "0.3.0"
+          from modelriskops import (
+              SigningKeyRegistry,
+              ChangeMateriality,
+              FoundationModelDependency,
+              GenAIMetricKind,
+              build_genai_governance_dossier,
+              create_genai_model_change_proposal,
+          )
+          assert modelriskops.__version__ == "0.4.0"
           assert SigningKeyRegistry is not None
           assert ChangeMateriality.MATERIAL.value == "material"
-          assert build_signed_change_dossier is not None
+          assert FoundationModelDependency is not None
+          assert GenAIMetricKind.FACTUALITY.value == "factuality"
+          assert build_genai_governance_dossier is not None
+          assert create_genai_model_change_proposal is not None
           print(modelriskops.__version__)
           PY
           /tmp/modelriskops-wheel/bin/modelriskops --help >/dev/null
