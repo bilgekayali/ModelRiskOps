@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/genai-evaluation-observation.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["plan_digest","metric_id","value","observed_at","sample_size","source_evidence_digest","evaluator_id"],
+  "properties":{
+    "plan_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"metric_id":{"type":"string","minLength":1},"value":{"type":"number"},
+    "observed_at":{"type":"integer","minimum":0},"sample_size":{"type":"integer","minimum":1},
+    "source_evidence_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"evaluator_id":{"type":"string","minLength":1}
+  }
+}

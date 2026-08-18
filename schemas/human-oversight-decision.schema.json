@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/human-oversight-decision.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["requirement_digest","reviewer_id","reviewer_role","decision","rationale","evidence_digest","decided_at","effective_oversight_determined"],
+  "properties":{
+    "requirement_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"reviewer_id":{"type":"string","minLength":1},"reviewer_role":{"type":"string","minLength":1},
+    "decision":{"enum":["accept","escalate","reject"]},"rationale":{"type":"string","minLength":1},
+    "evidence_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"decided_at":{"type":"integer","minimum":0},
+    "effective_oversight_determined":{"const":false}
+  }
+}

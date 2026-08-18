@@ -30,8 +30,8 @@ def payload(value):
     return json.loads(canonical_json(value))
 
 
-def test_version_is_v0_3_0() -> None:
-    assert modelriskops.__version__ == "0.3.0"
+def test_v03_contracts_are_retained_under_v0_4_package() -> None:
+    assert modelriskops.__version__ == "0.4.0"
 
 
 def test_new_v03_schemas_are_strict_and_accept_runtime_artifacts() -> None:
