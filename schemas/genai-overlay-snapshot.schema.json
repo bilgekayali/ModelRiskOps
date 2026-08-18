@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/genai-overlay-snapshot.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["institution_id","model_id","version_id","foundation_model_digest","prompt_policy_digest","rag_configuration_digest","use_case_digest"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},"model_id":{"type":"string","minLength":1},"version_id":{"type":"string","minLength":1},
+    "foundation_model_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"prompt_policy_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "rag_configuration_digest":{"type":["string","null"],"pattern":"^[0-9a-f]{64}$"},"use_case_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}
