@@ -3,15 +3,17 @@ from __future__ import annotations
 import json
 
 from .canonical import canonical_json, sha256_digest
-from .dossier import DossierEntry, GovernanceDossier, verify_governance_dossier
+from .dossier import DossierEntry, DossierGovernanceState, GovernanceDossier, verify_governance_dossier
 from .genai import (
     FoundationModelDependency,
     GenAIEvaluationAssessment,
     GenAIEvaluationPlan,
+    GenAIEvaluationState,
     GenAIOverlaySnapshot,
     GenAIRevalidationEvidence,
     GenAIUseCaseProfile,
     HumanOversightDecision,
+    HumanOversightDecisionKind,
     HumanOversightRequirement,
     PromptPolicyArtifact,
     RAGConfiguration,
@@ -29,16 +31,24 @@ def _entry(artifact_type: str, artifact_id: str, artifact) -> DossierEntry:
     )
 
 
-def _manifest(dossier: GovernanceDossier, entries: tuple[DossierEntry, ...]) -> str:
+def _manifest(
+    dossier: GovernanceDossier,
+    entries: tuple[DossierEntry, ...],
+    *,
+    governance_state: DossierGovernanceState,
+    governance_path_complete: bool,
+    conditions: tuple[str, ...],
+    gaps: tuple[str, ...],
+) -> str:
     return sha256_digest(
         {
             "institution_id": dossier.institution_id,
             "model_id": dossier.model_id,
             "version_id": dossier.version_id,
-            "governance_state": dossier.governance_state.value,
-            "governance_path_complete": dossier.governance_path_complete,
-            "conditions": list(dossier.conditions),
-            "gaps": list(dossier.gaps),
+            "governance_state": governance_state.value,
+            "governance_path_complete": governance_path_complete,
+            "conditions": list(conditions),
+            "gaps": list(gaps),
             "artifacts": [
                 {
                     "artifact_type": entry.artifact_type,
@@ -65,10 +75,10 @@ def build_genai_governance_dossier(
     oversight_decision: HumanOversightDecision | None = None,
     revalidation_evidence: GenAIRevalidationEvidence | None = None,
 ) -> GovernanceDossier:
-    """Append typed GenAI evidence to a verified governance or signed-change dossier.
+    """Append typed GenAI evidence and fail closed on represented deterioration.
 
-    The dossier proves deterministic integrity and represented relationships only. It
-    does not convert evaluation or oversight evidence into a safety/compliance claim.
+    Evaluation and oversight evidence affects governance completeness, but never becomes
+    an automatic safety, compliance or deployment conclusion.
     """
     verify_governance_dossier(base_dossier)
     expected_scope = (base_dossier.institution_id, base_dossier.model_id, base_dossier.version_id)
@@ -134,17 +144,54 @@ def build_genai_governance_dossier(
             raise GovernanceError("GenAI revalidation evidence is stale for dossier overlay")
         additions.append(_entry("genai_revalidation_evidence", base_dossier.version_id, revalidation_evidence))
 
+    governance_state = base_dossier.governance_state
+    governance_path_complete = base_dossier.governance_path_complete
+    conditions = set(base_dossier.conditions)
+    gaps = set(base_dossier.gaps)
+
+    if evaluation_assessment.state is GenAIEvaluationState.INCOMPLETE:
+        governance_state = DossierGovernanceState.INCOMPLETE
+        governance_path_complete = False
+        gaps.add("genai_evaluation_incomplete")
+    elif evaluation_assessment.state is GenAIEvaluationState.BREACHED:
+        governance_state = DossierGovernanceState.REVALIDATION_REQUIRED
+        governance_path_complete = False
+        gaps.add("genai_evaluation_breached")
+    elif evaluation_assessment.state is GenAIEvaluationState.DEGRADED:
+        if governance_state is DossierGovernanceState.APPROVED:
+            governance_state = DossierGovernanceState.APPROVED_WITH_CONDITIONS
+        conditions.add("genai_evaluation_degraded")
+
+    if oversight_decision is not None:
+        if oversight_decision.decision is HumanOversightDecisionKind.REJECT:
+            governance_state = DossierGovernanceState.REJECTED
+            governance_path_complete = False
+            gaps.add("human_oversight_rejected")
+        elif oversight_decision.decision is HumanOversightDecisionKind.ESCALATE:
+            governance_state = DossierGovernanceState.REVALIDATION_REQUIRED
+            governance_path_complete = False
+            gaps.add("human_oversight_escalated")
+
+    ordered_conditions = tuple(sorted(conditions))
+    ordered_gaps = tuple(sorted(gaps))
     entries = tuple(sorted((*base_dossier.entries, *additions), key=lambda item: (item.artifact_type, item.artifact_id)))
     result = GovernanceDossier(
         institution_id=base_dossier.institution_id,
         model_id=base_dossier.model_id,
         version_id=base_dossier.version_id,
-        governance_state=base_dossier.governance_state,
-        governance_path_complete=base_dossier.governance_path_complete,
-        conditions=base_dossier.conditions,
-        gaps=base_dossier.gaps,
+        governance_state=governance_state,
+        governance_path_complete=governance_path_complete,
+        conditions=ordered_conditions,
+        gaps=ordered_gaps,
         entries=entries,
-        manifest_digest=_manifest(base_dossier, entries),
+        manifest_digest=_manifest(
+            base_dossier,
+            entries,
+            governance_state=governance_state,
+            governance_path_complete=governance_path_complete,
+            conditions=ordered_conditions,
+            gaps=ordered_gaps,
+        ),
     )
     verify_governance_dossier(result)
     return result
