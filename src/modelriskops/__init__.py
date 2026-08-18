@@ -105,6 +105,7 @@ from .dossier import (
     dossier_from_dict,
     verify_governance_dossier,
 )
+from .signed_dossier import build_signed_change_dossier
 
 __all__ = [
     "canonical_json",
@@ -197,6 +198,7 @@ __all__ = [
     "build_governance_dossier",
     "dossier_from_dict",
     "verify_governance_dossier",
+    "build_signed_change_dossier",
 ]
 
 __version__ = "0.3.0"
