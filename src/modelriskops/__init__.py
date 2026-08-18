@@ -71,6 +71,32 @@ from .monitoring import (
     build_monitoring_plan,
     derive_monitoring_revalidation,
 )
+from .signing import (
+    KeyRevocation,
+    SignedGovernanceEnvelope,
+    SigningKeyRegistry,
+    VerificationKeyRecord,
+    create_signed_envelope,
+    public_key_base64_from_private_seed,
+    verify_signed_envelope,
+)
+from .change_control import (
+    ChangeAuthorizationDecision,
+    ChangeAuthorizationRequirement,
+    ChangeAuthorizationResolution,
+    ChangeAuthorizationState,
+    ChangeAuthorizationVote,
+    ChangeImplementationEvidence,
+    ChangeMateriality,
+    ModelChangeProposal,
+    assert_change_implementation_current,
+    assert_change_proposal_current,
+    create_change_authorization_vote,
+    create_change_implementation_evidence,
+    create_model_change_proposal,
+    derive_change_authorization_requirement,
+    resolve_change_authorization,
+)
 from .dossier import (
     DossierEntry,
     DossierGovernanceState,
@@ -143,6 +169,28 @@ __all__ = [
     "assess_monitoring",
     "build_monitoring_plan",
     "derive_monitoring_revalidation",
+    "VerificationKeyRecord",
+    "KeyRevocation",
+    "SignedGovernanceEnvelope",
+    "SigningKeyRegistry",
+    "public_key_base64_from_private_seed",
+    "create_signed_envelope",
+    "verify_signed_envelope",
+    "ChangeMateriality",
+    "ChangeAuthorizationDecision",
+    "ChangeAuthorizationState",
+    "ModelChangeProposal",
+    "ChangeAuthorizationRequirement",
+    "ChangeAuthorizationVote",
+    "ChangeAuthorizationResolution",
+    "ChangeImplementationEvidence",
+    "create_model_change_proposal",
+    "assert_change_proposal_current",
+    "derive_change_authorization_requirement",
+    "create_change_authorization_vote",
+    "resolve_change_authorization",
+    "create_change_implementation_evidence",
+    "assert_change_implementation_current",
     "DossierEntry",
     "DossierGovernanceState",
     "GovernanceDossier",
@@ -151,4 +199,4 @@ __all__ = [
     "verify_governance_dossier",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
