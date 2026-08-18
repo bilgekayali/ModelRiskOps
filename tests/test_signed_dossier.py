@@ -152,3 +152,25 @@ def test_signed_change_dossier_rejects_implementation_for_wrong_authorization() 
             registry,
             implementation=bad,
         )
+
+
+def test_after_state_signed_dossier_rejects_incomplete_change_authorization() -> None:
+    _, base, proposal, requirement, votes, signatures, _, registry, _ = build_signed_dossier_fixture()
+    incomplete = resolve_change_authorization(
+        proposal,
+        requirement,
+        votes[:1],
+        {votes[0].evidence_digest: signatures[votes[0].evidence_digest]},
+        registry,
+        resolved_at=170,
+    )
+    with pytest.raises(GovernanceError, match="requires authorized change"):
+        build_signed_change_dossier(
+            base,
+            proposal,
+            requirement,
+            votes[:1],
+            {votes[0].evidence_digest: signatures[votes[0].evidence_digest]},
+            incomplete,
+            registry,
+        )
