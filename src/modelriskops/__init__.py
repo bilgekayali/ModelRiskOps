@@ -56,6 +56,21 @@ from .governance import (
     derive_revalidation_requirement,
     resolve_approval,
 )
+from .monitoring import (
+    MetricAssessment,
+    MetricDefinition,
+    MetricKind,
+    MetricStatus,
+    MonitoringAssessment,
+    MonitoringLevel,
+    MonitoringObservation,
+    MonitoringPlan,
+    MonitoringState,
+    ThresholdDirection,
+    assess_monitoring,
+    build_monitoring_plan,
+    derive_monitoring_revalidation,
+)
 from .dossier import (
     DossierEntry,
     DossierGovernanceState,
@@ -115,6 +130,19 @@ __all__ = [
     "derive_approval_requirement",
     "derive_revalidation_requirement",
     "resolve_approval",
+    "MetricAssessment",
+    "MetricDefinition",
+    "MetricKind",
+    "MetricStatus",
+    "MonitoringAssessment",
+    "MonitoringLevel",
+    "MonitoringObservation",
+    "MonitoringPlan",
+    "MonitoringState",
+    "ThresholdDirection",
+    "assess_monitoring",
+    "build_monitoring_plan",
+    "derive_monitoring_revalidation",
     "DossierEntry",
     "DossierGovernanceState",
     "GovernanceDossier",
@@ -123,4 +151,4 @@ __all__ = [
     "verify_governance_dossier",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/monitoring-plan.schema.json",
+  "title": "ModelRiskOps Monitoring Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id", "model_id", "version_id", "model_version_digest", "risk_decision_digest", "monitoring_level", "cadence_seconds", "max_staleness_seconds", "metrics"],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "version_id": {"type": "string", "minLength": 1},
+    "model_version_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "risk_decision_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "monitoring_level": {"enum": ["standard", "enhanced"]},
+    "cadence_seconds": {"type": "integer", "minimum": 1},
+    "max_staleness_seconds": {"type": "integer", "minimum": 1},
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metric_id", "kind", "direction", "warning_threshold", "breach_threshold", "min_samples", "reference_digest"],
+        "properties": {
+          "metric_id": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["performance", "data_drift", "prediction_drift", "calibration", "fairness", "stability", "operational"]},
+          "direction": {"enum": ["above_is_worse", "below_is_worse"]},
+          "warning_threshold": {"type": "number"},
+          "breach_threshold": {"type": "number"},
+          "min_samples": {"type": "integer", "minimum": 1},
+          "reference_digest": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[0-9a-f]{64}$"}]}
+        }
+      }
+    }
+  }
+}
