@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/human-oversight-requirement.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["institution_id","model_id","version_id","use_case_digest","evaluation_plan_digest","required","required_roles","rationale"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},"model_id":{"type":"string","minLength":1},"version_id":{"type":"string","minLength":1},
+    "use_case_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"evaluation_plan_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "required":{"type":"boolean"},"required_roles":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "rationale":{"type":"string","minLength":1}
+  },
+  "allOf":[
+    {"if":{"properties":{"required":{"const":true}}},"then":{"properties":{"required_roles":{"minItems":1}}}},
+    {"if":{"properties":{"required":{"const":false}}},"then":{"properties":{"required_roles":{"maxItems":0}}}}
+  ]
+}
