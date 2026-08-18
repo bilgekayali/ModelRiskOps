@@ -117,7 +117,6 @@ from .genai import (
     MetricDirection,
     PromptPolicyArtifact,
     RAGConfiguration,
-    assess_genai_evaluation,
     build_genai_evaluation_plan,
     build_genai_overlay_snapshot,
     create_human_oversight_decision,
@@ -129,6 +128,7 @@ from .genai_change import (
     create_genai_change_implementation_evidence,
     create_genai_model_change_proposal,
 )
+from .genai_runtime import assess_genai_evaluation, build_genai_governance_dossier
 from .dossier import (
     DossierEntry,
     DossierGovernanceState,
@@ -138,7 +138,6 @@ from .dossier import (
     verify_governance_dossier,
 )
 from .signed_dossier import build_signed_change_dossier
-from .genai_dossier import build_genai_governance_dossier
 
 __all__ = [
     "canonical_json",
