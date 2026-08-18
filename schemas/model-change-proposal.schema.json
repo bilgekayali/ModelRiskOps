@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.local/schemas/model-change-proposal.schema.json",
+  "title": "ModelRiskOps Model Change Proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["change_id", "institution_id", "model_id", "before_version_id", "after_version_id", "before_record_digest", "after_record_digest", "before_version_digest", "after_version_digest", "before_policy_digest", "after_policy_digest", "before_state_digest", "after_state_digest", "materiality", "materiality_owner_id", "materiality_rationale", "revalidation_requirement_digest", "proposed_at"],
+  "properties": {
+    "change_id": {"type": "string", "minLength": 1},
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "before_version_id": {"type": "string", "minLength": 1},
+    "after_version_id": {"type": "string", "minLength": 1},
+    "before_record_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "after_record_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "before_version_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "after_version_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "before_policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "after_policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "before_state_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "after_state_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "materiality": {"enum": ["non_material", "material"]},
+    "materiality_owner_id": {"type": "string", "minLength": 1},
+    "materiality_rationale": {"type": "string", "minLength": 1},
+    "revalidation_requirement_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "proposed_at": {"type": "integer", "minimum": 0}
+  }
+}
