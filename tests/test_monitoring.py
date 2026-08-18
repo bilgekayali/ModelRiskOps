@@ -129,6 +129,29 @@ def test_drift_metric_requires_exact_reference_digest():
         )
 
 
+def test_runtime_integer_types_match_schema_contracts():
+    with pytest.raises(GovernanceError, match="min_samples"):
+        MetricDefinition(
+            metric_id="accuracy",
+            kind=MetricKind.PERFORMANCE,
+            direction=ThresholdDirection.BELOW_IS_WORSE,
+            warning_threshold=0.9,
+            breach_threshold=0.8,
+            min_samples=100.0,
+        )
+
+    model_version = version()
+    decision = risk(model_version)
+    with pytest.raises(GovernanceError, match="cadence_seconds"):
+        build_monitoring_plan(
+            model_version,
+            decision,
+            definitions(),
+            cadence_seconds=60.0,
+            max_staleness_seconds=180,
+        )
+
+
 def test_monitoring_plan_binds_exact_version_and_risk_and_sorts_metrics():
     model_version, decision, plan = plan_and_risk()
     assert plan.model_version_digest == model_version.evidence_digest
