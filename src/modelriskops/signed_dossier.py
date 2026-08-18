@@ -60,12 +60,16 @@ def build_signed_change_dossier(
     *,
     implementation: ChangeImplementationEvidence | None = None,
 ) -> GovernanceDossier:
-    """Append already-governed signed change evidence to an exact governance dossier.
+    """Append authorized signed change evidence to an exact after-state dossier.
 
-    This helper re-verifies signature integrity and artifact bindings. It does not
-    replace `resolve_change_authorization`, infer materiality, or authorize deployment.
+    This helper re-verifies signature integrity and artifact bindings. Rejected or
+    incomplete change packages remain valid standalone historical evidence, but
+    cannot be attached to an approved after-version dossier as if that after state
+    were authorized.
     """
     verify_governance_dossier(base_dossier)
+    if authorization.state is not ChangeAuthorizationState.AUTHORIZED:
+        raise GovernanceError("signed after-state dossier requires authorized change")
     if base_dossier.institution_id != proposal.institution_id or base_dossier.model_id != proposal.model_id:
         raise GovernanceError("change proposal does not belong to base governance dossier model")
     if base_dossier.version_id != proposal.after_version_id:
@@ -106,8 +110,6 @@ def build_signed_change_dossier(
     if tuple(expected_signature_digests) != authorization.signature_digests:
         raise GovernanceError("change authorization signature set does not match resolution evidence")
 
-    if authorization.state is not ChangeAuthorizationState.AUTHORIZED and implementation is not None:
-        raise GovernanceError("implementation evidence cannot be packaged for non-authorized change")
     if implementation is not None:
         if implementation.proposal_digest != proposal.evidence_digest:
             raise GovernanceError("implementation evidence is bound to different proposal")
