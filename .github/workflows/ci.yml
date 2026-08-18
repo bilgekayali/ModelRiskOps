@@ -26,6 +26,16 @@ jobs:
         run: python -m pip install -e '.[dev]'
       - name: Run tests
         run: python -m pytest
+      - name: Validate all Draft 2020-12 schemas
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          for path in sorted(Path("schemas").glob("*.schema.json")):
+              jsonschema.Draft202012Validator.check_schema(json.loads(path.read_text(encoding="utf-8")))
+              print(path)
+          PY
       - name: Build wheel
         run: python -m build --wheel
       - name: Clean-wheel smoke
@@ -36,7 +46,11 @@ jobs:
           /tmp/modelriskops-wheel/bin/python -m pip install dist/*.whl
           /tmp/modelriskops-wheel/bin/python - <<'PY'
           import modelriskops
-          assert modelriskops.__version__ == "0.2.0"
+          from modelriskops import SigningKeyRegistry, ChangeMateriality, build_signed_change_dossier
+          assert modelriskops.__version__ == "0.3.0"
+          assert SigningKeyRegistry is not None
+          assert ChangeMateriality.MATERIAL.value == "material"
+          assert build_signed_change_dossier is not None
           print(modelriskops.__version__)
           PY
           /tmp/modelriskops-wheel/bin/modelriskops --help >/dev/null
