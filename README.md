@@ -4,33 +4,33 @@
 
 ## Summary
 
-ModelRiskOps is an open-source reference architecture for governing analytical, statistical, machine-learning, and AI models through a controlled lifecycle: inventory, risk classification, independent validation, approval, change/revalidation control, and evidence packaging.
+ModelRiskOps is an open-source reference architecture for governing analytical, statistical, machine-learning, and AI models through a controlled lifecycle: inventory, risk classification, independent validation, approval, post-approval monitoring, change/revalidation control, and evidence packaging.
 
-The project is designed for regulated and high-assurance environments. It is not a model-training framework, automated model validator, regulatory certification product, or substitute for independent expert judgement.
+The project is designed for regulated and high-assurance environments. It is not a model-training framework, automated model validator, production monitoring platform, regulatory certification product, or substitute for independent expert judgement.
 
-## v0.1.0 foundation
+## v0.2.0 monitoring and drift evidence
 
-ModelRiskOps v0.1.0 provides an executable governance-control foundation with:
+ModelRiskOps v0.2.0 extends the v0.1 governance foundation with deterministic post-approval monitoring contracts:
 
-- immutable institution-scoped model records and exact model-version provenance;
-- artifact, code, data and configuration SHA-256 bindings;
-- explicit dataset, system, vendor, foundation-model and critical-service dependencies;
-- deterministic canonical JSON and evidence digests;
-- closed lifecycle transitions and conflicting model/version reuse protection;
-- deterministic inherent/residual risk tiering from nine closed risk factors;
-- institution/policy-digest binding, bounded control credit and tier-derived governance requirements;
-- independent validation plans bound to the exact model version and risk decision;
-- structured validation tests/findings, remediation evidence and independent closure;
-- fail-closed handling of incomplete mandatory tests and unresolved high/critical findings;
-- role-bound approval requirements with distinct-person enforcement for critical multi-role approvals;
-- approve, approve-with-conditions, reject and incomplete approval resolutions;
-- bounded exception artifacts with exact scope, compensating controls, expiry and optional one-time semantics;
-- deterministic revalidation requirements for material model, data, configuration, dependency, business-use, policy and operational-control changes;
-- a self-contained governance dossier that re-resolves validation findings and approval votes before packaging;
-- canonical artifact payloads, per-artifact digests and a deterministic dossier manifest digest;
-- offline dossier verification and tamper detection;
-- strict Draft 2020-12 JSON Schemas for inventory, risk, validation, approval, exception, revalidation and dossier artifacts;
+- monitoring plans bound to the exact `ModelVersion` and `RiskDecision` digests;
+- standard and risk-derived enhanced monitoring levels;
+- closed metric taxonomy for performance, data drift, prediction drift, calibration, fairness, stability and operational signals;
+- warning/breach thresholds with explicit direction semantics and minimum sample requirements;
+- exact reference-evidence digest binding for data/prediction drift baselines;
+- monitoring observations bound to plan digest, metric identity, evidence window, observation time, sample size and source-evidence digest;
+- deterministic latest-observation selection independent of input order;
+- fail-closed handling of missing, stale, insufficient-sample, unknown-plan and conflicting-latest evidence;
+- healthy, degraded, breached and incomplete monitoring states;
+- breached or incomplete monitoring evidence deterministically creates a `MONITORING_DETERIORATION` revalidation path;
+- no automatic lifecycle mutation, deployment, suspension or model approval from monitoring state;
+- strict Draft 2020-12 JSON Schemas for monitoring plans, observations and assessments;
 - Python 3.11/3.12/3.13 CI, wheel build and clean-installed-wheel smoke tests.
+
+The monitoring core governs already-computed metrics and their evidence. v0.2.0 does not infer statistical validity from raw production data and does not prescribe one universal drift statistic or fairness metric across institutions and use cases.
+
+## v0.1.0 governance foundation retained
+
+The v0.1 contracts remain intact: immutable institution-scoped model/version inventory, SHA-256 provenance binding, deterministic inherent/residual risk tiering, independent validation, finding remediation, role-bound approvals, bounded exceptions, material-change revalidation, deterministic governance dossiers, offline integrity verification and strict release schemas.
 
 ## CLI
 
@@ -46,11 +46,11 @@ modelriskops verify-dossier governance-dossier.json
 
 ## Assurance and integrity boundary
 
-ModelRiskOps governance decisions bind to exact model/version, risk-policy, validation and approval evidence. Missing or stale inputs fail closed where the control requires them, and a material revalidation trigger prevents an existing dossier from representing a complete governance path.
+ModelRiskOps governance decisions and monitoring evidence bind to exact model/version, risk-policy, validation, approval and monitoring evidence. Missing or stale required inputs fail closed where the control requires them.
 
-The v0.1.0 dossier provides **deterministic integrity and internal-consistency evidence**, not source authenticity or non-repudiation. It does not yet provide institution-owned signing keys, external immutable anchoring, trusted timestamping, production identity/IAM, or independent third-party attestation. Those are later hardening milestones.
+The project provides **deterministic integrity and internal-consistency evidence**, not source authenticity or non-repudiation. v0.2.0 does not yet provide institution-owned signing keys, external immutable anchoring, trusted timestamping, production identity/IAM, production telemetry collection or independent third-party attestation. Those remain later hardening milestones.
 
-Registration, risk classification, validation, approval or dossier generation does not itself establish that a model is safe, unbiased, lawful, compliant, fit for production, or accepted by a regulator.
+Registration, risk classification, validation, approval, monitoring assessment or dossier generation does not itself establish that a model is safe, unbiased, lawful, compliant, statistically valid, fit for production, fit for continued operation, or accepted by a regulator.
 
 ## Initial standards posture
 
@@ -61,17 +61,18 @@ Design inputs include:
 - NIST AI 600-1 — Generative AI Profile;
 - Regulation (EU) 2024/1689 — EU Artificial Intelligence Act.
 
-These are governance and assurance design inputs, not claims of legal applicability, compliance, supervisory approval, model safety, or certification.
+These are governance and assurance design inputs, not claims of legal applicability, compliance, supervisory approval, model safety or certification.
 
 ## Design principles
 
 - Human accountability remains explicit.
 - Governance decisions bind to exact model/version and evidence digests rather than mutable names.
-- Missing or stale governance inputs fail closed where required.
+- Missing or stale governance and monitoring inputs fail closed where required.
 - Historical evidence is preserved rather than silently overwritten.
 - Exceptions do not silently replace mandatory validation paths.
+- Monitoring deterioration creates accountable governance work; it does not autonomously change model lifecycle state.
 - Regulatory mappings are separated from legal conclusions and certification claims.
-- The governance core does not execute, train or deploy models.
+- The governance core does not execute, train, deploy or operate models.
 
 ## Roadmap direction
 

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/monitoring-observation.schema.json",
+  "title": "ModelRiskOps Monitoring Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["monitoring_plan_digest", "metric_id", "window_start", "window_end", "observed_at", "value", "sample_size", "source_evidence_digest"],
+  "properties": {
+    "monitoring_plan_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "metric_id": {"type": "string", "minLength": 1},
+    "window_start": {"type": "integer", "minimum": 0},
+    "window_end": {"type": "integer", "minimum": 1},
+    "observed_at": {"type": "integer", "minimum": 1},
+    "value": {"type": "number"},
+    "sample_size": {"type": "integer", "minimum": 0},
+    "source_evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

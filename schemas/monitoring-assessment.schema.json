@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/monitoring-assessment.schema.json",
+  "title": "ModelRiskOps Monitoring Assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id", "model_id", "version_id", "model_version_digest", "risk_decision_digest", "monitoring_plan_digest", "as_of", "state", "metric_assessments", "observation_digests", "revalidation_required"],
+  "properties": {
+    "institution_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "version_id": {"type": "string", "minLength": 1},
+    "model_version_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "risk_decision_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "monitoring_plan_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "as_of": {"type": "integer", "minimum": 0},
+    "state": {"enum": ["healthy", "degraded", "breached", "incomplete"]},
+    "metric_assessments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metric_id", "status", "observation_digest", "measured_value", "reason"],
+        "properties": {
+          "metric_id": {"type": "string", "minLength": 1},
+          "status": {"enum": ["pass", "warning", "breach", "missing", "stale", "insufficient_samples"]},
+          "observation_digest": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[0-9a-f]{64}$"}]},
+          "measured_value": {"oneOf": [{"type": "null"}, {"type": "number"}]},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "observation_digests": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+    "revalidation_required": {"type": "boolean"}
+  }
+}
