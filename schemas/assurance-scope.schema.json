@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/assurance-scope.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id","scope_id","scope_version","subject_kind","subject_id","subject_version","subject_artifact_digest","context_digest","owner_id","mapping_profile_digests","recorded_at"],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "scope_id": {"type":"string","minLength":1},
+    "scope_version": {"type":"integer","minimum":1},
+    "subject_kind": {"enum":["model_version","governance_dossier","genai_overlay","portfolio_snapshot","other"]},
+    "subject_id": {"type":"string","minLength":1},
+    "subject_version": {"type":"string","minLength":1},
+    "subject_artifact_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "context_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "owner_id": {"type":"string","minLength":1},
+    "mapping_profile_digests": {"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","pattern":"^[0-9a-f]{64}$"}},
+    "recorded_at": {"type":"integer","minimum":0}
+  }
+}
