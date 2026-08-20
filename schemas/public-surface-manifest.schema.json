@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/public-surface-manifest.schema.json",
+  "title": "ModelRiskOps Public Surface Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["release_version", "compatibility_policy_digest", "python_api_symbols", "cli_commands", "json_schema_baseline_digest", "generated_at"],
+  "properties": {
+    "release_version": {"const": "1.0.0"},
+    "compatibility_policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "python_api_symbols": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "cli_commands": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "json_schema_baseline_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "generated_at": {"type": "integer", "minimum": 1}
+  }
+}
