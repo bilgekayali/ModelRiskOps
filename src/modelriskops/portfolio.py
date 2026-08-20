@@ -726,8 +726,13 @@ class PortfolioRiskRegistry:
                 if dependency.materiality in {DependencyMateriality.MATERIAL, DependencyMateriality.CRITICAL}:
                     if plan is None:
                         incomplete.add(f"missing_current_exit_plan:{dependency.dependency_id}")
-                    elif dependency.materiality is DependencyMateriality.CRITICAL and plan.tested_at is None:
-                        incomplete.add(f"untested_critical_exit_plan:{dependency.dependency_id}")
+                    elif plan.created_at > assessed_at:
+                        incomplete.add(f"exit_plan_not_effective_at_assessment:{dependency.dependency_id}")
+                    elif dependency.materiality is DependencyMateriality.CRITICAL:
+                        if plan.tested_at is None:
+                            incomplete.add(f"untested_critical_exit_plan:{dependency.dependency_id}")
+                        elif plan.tested_at > assessed_at:
+                            incomplete.add(f"critical_exit_test_not_effective_at_assessment:{dependency.dependency_id}")
                     if dependency.substitutability in {Substitutability.LOW, Substitutability.NONE}:
                         degraded.add(f"low_substitutability:{dependency.dependency_id}")
 
