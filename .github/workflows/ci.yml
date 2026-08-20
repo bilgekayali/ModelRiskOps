@@ -33,7 +33,10 @@ jobs:
           from pathlib import Path
           import jsonschema
           for path in sorted(Path("schemas").glob("*.schema.json")):
-              jsonschema.Draft202012Validator.check_schema(json.loads(path.read_text(encoding="utf-8")))
+              payload = json.loads(path.read_text(encoding="utf-8"))
+              assert payload["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+              assert payload["additionalProperties"] is False
+              jsonschema.Draft202012Validator.check_schema(payload)
               print(path)
           PY
       - name: Build wheel
@@ -46,6 +49,7 @@ jobs:
           /tmp/modelriskops-wheel/bin/python -m pip install dist/*.whl
           /tmp/modelriskops-wheel/bin/python - <<'PY'
           import modelriskops
+          import modelriskops.api as stable_api
           from modelriskops import (
               SigningKeyRegistry,
               ChangeMateriality,
@@ -70,7 +74,11 @@ jobs:
               HttpsEgressPolicy,
               UpgradePlan,
           )
-          assert modelriskops.__version__ == "0.8.0"
+          from modelriskops.stability import StableReleaseRegistry, StableCompatibilityPolicy
+          assert modelriskops.__version__ == "1.0.0"
+          assert len(stable_api.__all__) == 62
+          assert StableReleaseRegistry is not None
+          assert StableCompatibilityPolicy is not None
           assert SigningKeyRegistry is not None
           assert ChangeMateriality.MATERIAL.value == "material"
           assert FoundationModelDependency is not None
@@ -96,3 +104,4 @@ jobs:
           print(modelriskops.__version__)
           PY
           /tmp/modelriskops-wheel/bin/modelriskops --help >/dev/null
+          /tmp/modelriskops-wheel/bin/modelriskops contract-snapshot | grep -q '"execution_performed":false'
