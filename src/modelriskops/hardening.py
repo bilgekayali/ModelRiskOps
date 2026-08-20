@@ -236,6 +236,12 @@ class TenantIsolationRegistry:
             key=lambda item: item.profile_version,
         ))
 
+    def profile_by_digest(self, institution_id: str, tenant_id: str, digest: str) -> TenantIsolationProfile:
+        for (scope, tenant, _), profile in self._profiles.items():
+            if scope == institution_id and tenant == tenant_id and profile.evidence_digest == digest:
+                return profile
+        raise GovernanceError("unknown tenant isolation profile digest")
+
     def register_profile(self, profile: TenantIsolationProfile) -> str:
         identity = (profile.institution_id, profile.tenant_id, profile.profile_version)
         existing = self._profiles.get(identity)
@@ -443,13 +449,14 @@ class InstitutionCryptoKeyRegistry:
         return eligible[-1].status
 
     def current_key(self, institution_id: str, tenant_id: str, purpose: CryptoKeyPurpose, *, now: int) -> InstitutionCryptoKeyReference:
-        candidates = [
-            key for key in self.history(institution_id, tenant_id, purpose)
-            if key.not_before <= now < key.not_after and self.status_at(key, at=now) is CryptoKeyStatus.ACTIVE
-        ]
-        if not candidates:
+        _timestamp("now", now)
+        eligible = [key for key in self.history(institution_id, tenant_id, purpose) if key.not_before <= now < key.not_after]
+        if not eligible:
             raise GovernanceError("no active tenant crypto key exists for requested purpose/time")
-        return candidates[-1]
+        latest = eligible[-1]
+        if self.status_at(latest, at=now) is not CryptoKeyStatus.ACTIVE:
+            raise GovernanceError("no active tenant crypto key exists for requested purpose/time")
+        return latest
 
     def assert_new_operation_allowed(self, key: InstitutionCryptoKeyReference, *, artifact_time: int, now: int) -> None:
         _timestamp("artifact_time", artifact_time)
@@ -658,10 +665,7 @@ class ConfigurationChangeRegistry:
             raise GovernanceError("configuration change chain cannot move backward in time")
         object_key = (request.institution_id, request.tenant_id, request.object_type, request.object_id)
         current_digest = self._latest_object_digest.get(object_key)
-        if current_digest is None:
-            if request.previous_configuration_digest is not None:
-                raise GovernanceError("first configuration change for an object must not claim previous state")
-        elif request.previous_configuration_digest != current_digest:
+        if current_digest is not None and request.previous_configuration_digest != current_digest:
             raise GovernanceError("configuration change previous digest does not match current object state")
         self._changes[identity] = signed
         self._latest_object_digest[object_key] = request.proposed_configuration_digest
@@ -782,10 +786,9 @@ def encrypt_governance_evidence(plaintext: bytes, *, envelope_id: str, instituti
 
 def decrypt_governance_evidence(envelope: EncryptedGovernanceEvidence, *, isolation_registry: TenantIsolationRegistry, key_registry: InstitutionCryptoKeyRegistry, decryptor: TenantEvidenceDecryptor, now: int) -> bytes:
     _timestamp("now", now)
-    profile = isolation_registry.current_profile(envelope.institution_id, envelope.tenant_id)
-    if profile.evidence_digest != envelope.isolation_profile_digest:
-        raise GovernanceError("encrypted evidence isolation profile is not current")
-    isolation_registry.assert_profile_current(profile)
+    profile = isolation_registry.profile_by_digest(envelope.institution_id, envelope.tenant_id, envelope.isolation_profile_digest)
+    for digest in profile.rls_policy_digests:
+        isolation_registry._policy_by_digest(profile.institution_id, digest)
     key = key_registry.by_digest(envelope.institution_id, envelope.tenant_id, envelope.key_reference_digest)
     if key.key_id != envelope.key_id or key.key_version != envelope.key_version or key.purpose is not CryptoKeyPurpose.EVIDENCE_ENCRYPTION:
         raise GovernanceError("encrypted evidence key identity mismatch")
@@ -811,3 +814,11 @@ def decrypt_governance_evidence(envelope: EncryptedGovernanceEvidence, *, isolat
     if not isinstance(plaintext, bytes) or _sha256_bytes(plaintext) != envelope.plaintext_digest:
         raise GovernanceError("decrypted governance evidence digest mismatch")
     return plaintext
+
+
+def assert_encrypted_evidence_current(envelope: EncryptedGovernanceEvidence, *, isolation_registry: TenantIsolationRegistry, key_registry: InstitutionCryptoKeyRegistry, now: int) -> None:
+    profile = isolation_registry.profile_by_digest(envelope.institution_id, envelope.tenant_id, envelope.isolation_profile_digest)
+    isolation_registry.assert_profile_current(profile)
+    key = key_registry.by_digest(envelope.institution_id, envelope.tenant_id, envelope.key_reference_digest)
+    if key_registry.status_at(key, at=now) is CryptoKeyStatus.DISABLED:
+        raise GovernanceError("encrypted governance evidence key is disabled")
