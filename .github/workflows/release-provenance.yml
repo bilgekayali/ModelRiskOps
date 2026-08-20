@@ -1,0 +1,70 @@
+name: Release Provenance Gate
+
+on:
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/release-provenance.yml"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  reproducible-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build
+      - name: Set reproducible build epoch
+        shell: bash
+        run: echo "SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)" >> "$GITHUB_ENV"
+      - name: Build wheel twice
+        run: |
+          python -m build --wheel --outdir dist-a
+          python -m build --wheel --outdir dist-b
+      - name: Verify byte-identical wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t A < <(find dist-a -maxdepth 1 -type f -name '*.whl' -print)
+          mapfile -t B < <(find dist-b -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#A[@]}" -eq 1
+          test "${#B[@]}" -eq 1
+          sha_a=$(sha256sum "${A[0]}" | awk '{print $1}')
+          sha_b=$(sha256sum "${B[0]}" | awk '{print $1}')
+          test "$sha_a" = "$sha_b"
+          printf '%s  %s\n' "$sha_a" "$(basename "${A[0]}")" > dist-a/SHA256SUMS
+          cat dist-a/SHA256SUMS
+      - name: Validate tag version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#v}"
+          package_version=$(python - <<'PY'
+          import tomllib
+          print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])
+          PY
+          )
+          test "$tag_version" = "$package_version"
+      - name: Attest wheel
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/attest@v4
+        with:
+          subject-path: "dist-a/*.whl"
+      - name: Attest checksum manifest
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/attest@v4
+        with:
+          subject-path: "dist-a/SHA256SUMS"
