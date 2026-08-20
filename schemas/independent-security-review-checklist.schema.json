@@ -4,9 +4,10 @@
   "title": "ModelRiskOps Independent Security Review Checklist v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["release_version", "reviewer_id", "reviewer_independence_confirmed", "items", "reviewed_at"],
+  "required": ["release_version", "reviewed_repository_digest", "reviewer_id", "reviewer_independence_confirmed", "items", "reviewed_at"],
   "properties": {
     "release_version": {"const": "1.0.0"},
+    "reviewed_repository_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "reviewer_id": {"type": "string", "minLength": 1},
     "reviewer_independence_confirmed": {"const": true},
     "items": {
