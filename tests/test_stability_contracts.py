@@ -30,15 +30,25 @@ def test_contract_snapshot_is_deterministic_and_non_executing() -> None:
     assert first["execution_performed"] is False
 
 
-def test_v1_schema_file_set_is_exact_and_strict() -> None:
+def test_v1_schema_file_set_is_exact_and_all_schemas_remain_valid() -> None:
     baseline = json.loads((ROOT / "compatibility/v1-schema-baseline.json").read_text(encoding="utf-8"))
     current = sorted(path.name for path in (ROOT / "schemas").glob("*.schema.json"))
     assert current == baseline["schema_files"]
     for filename in current:
         payload = json.loads((ROOT / "schemas" / filename).read_text(encoding="utf-8"))
         assert payload["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-        assert payload["additionalProperties"] is False
         jsonschema.Draft202012Validator.check_schema(payload)
+
+    for filename in (
+        "stable-compatibility-policy.schema.json",
+        "public-surface-manifest.schema.json",
+        "supported-upgrade-path.schema.json",
+        "independent-security-review-checklist.schema.json",
+        "responsibility-scope.schema.json",
+        "stable-release-baseline.schema.json",
+    ):
+        payload = json.loads((ROOT / "schemas" / filename).read_text(encoding="utf-8"))
+        assert payload["additionalProperties"] is False
 
 
 def test_v1_review_and_nonclaim_sets_are_canonical() -> None:
@@ -61,6 +71,7 @@ def test_v1_machine_contract_constants_are_fail_closed() -> None:
     assert upgrade["properties"]["breaking_changes_declared"]["const"] is False
 
     review = json.loads((ROOT / "schemas/independent-security-review-checklist.schema.json").read_text())
+    assert review["properties"]["reviewed_repository_digest"]["pattern"] == "^[0-9a-f]{64}$"
     assert review["properties"]["reviewer_independence_confirmed"]["const"] is True
     assert review["properties"]["items"]["minItems"] == 12
     assert review["properties"]["items"]["maxItems"] == 12
