@@ -65,8 +65,12 @@ jobs:
               CryptoKeyPurpose,
               CryptoAlgorithm,
               EncryptedGovernanceEvidence,
+              ProductionDeploymentRegistry,
+              DeploymentState,
+              HttpsEgressPolicy,
+              UpgradePlan,
           )
-          assert modelriskops.__version__ == "0.7.0"
+          assert modelriskops.__version__ == "0.8.0"
           assert SigningKeyRegistry is not None
           assert ChangeMateriality.MATERIAL.value == "material"
           assert FoundationModelDependency is not None
@@ -85,6 +89,10 @@ jobs:
           assert CryptoKeyPurpose.EVIDENCE_ENCRYPTION.value == "evidence_encryption"
           assert CryptoAlgorithm.AES_256_GCM.value == "AES-256-GCM"
           assert EncryptedGovernanceEvidence is not None
+          assert ProductionDeploymentRegistry is not None
+          assert DeploymentState.REFERENCE_READY.value == "reference_ready"
+          assert HttpsEgressPolicy is not None
+          assert UpgradePlan is not None
           print(modelriskops.__version__)
           PY
           /tmp/modelriskops-wheel/bin/modelriskops --help >/dev/null
