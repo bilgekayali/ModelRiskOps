@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/isolated-worker-profile.schema.json",
+  "title": "IsolatedWorkerProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["institution_id","tenant_id","worker_id","profile_version","runtime_identity_profile_digest","egress_policy_digest","read_only_root_filesystem","no_new_privileges","shell_access_enabled","subprocess_execution_enabled","privileged_container","model_invocation_enabled","registered_at"],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "tenant_id": {"type":"string","minLength":1},
+    "worker_id": {"type":"string","minLength":1},
+    "profile_version": {"type":"integer","minimum":1},
+    "runtime_identity_profile_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "egress_policy_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "read_only_root_filesystem": {"const":true},
+    "no_new_privileges": {"const":true},
+    "shell_access_enabled": {"const":false},
+    "subprocess_execution_enabled": {"const":false},
+    "privileged_container": {"const":false},
+    "model_invocation_enabled": {"const":false},
+    "registered_at": {"type":"integer","minimum":1}
+  }
+}
