@@ -450,11 +450,11 @@ class InstitutionCryptoKeyRegistry:
 
     def current_key(self, institution_id: str, tenant_id: str, purpose: CryptoKeyPurpose, *, now: int) -> InstitutionCryptoKeyReference:
         _timestamp("now", now)
-        eligible = [key for key in self.history(institution_id, tenant_id, purpose) if key.not_before <= now < key.not_after]
-        if not eligible:
+        introduced = [key for key in self.history(institution_id, tenant_id, purpose) if key.not_before <= now]
+        if not introduced:
             raise GovernanceError("no active tenant crypto key exists for requested purpose/time")
-        latest = eligible[-1]
-        if self.status_at(latest, at=now) is not CryptoKeyStatus.ACTIVE:
+        latest = introduced[-1]
+        if now >= latest.not_after or self.status_at(latest, at=now) is not CryptoKeyStatus.ACTIVE:
             raise GovernanceError("no active tenant crypto key exists for requested purpose/time")
         return latest
 
@@ -652,6 +652,9 @@ class ConfigurationChangeRegistry:
                 raise GovernanceError("configuration change sequence already exists with different content")
             return existing.evidence_digest
         verify_signed_configuration_change(signed, key_registry=key_registry, now=now)
+        key = key_registry.by_digest(request.institution_id, request.tenant_id, signed.key_reference_digest)
+        if key_registry.status_at(key, at=now) is CryptoKeyStatus.DISABLED:
+            raise GovernanceError("disabled configuration signing key cannot activate changes")
         if now < request.effective_at:
             raise GovernanceError("configuration change cannot become current before effective_at")
         history = self.history(request.institution_id, request.tenant_id)
@@ -726,7 +729,7 @@ class TenantEvidenceDecryptor(Protocol):
     def decrypt(self, nonce: bytes, ciphertext: bytes, aad: bytes) -> bytes: ...
 
 
-def encrypted_evidence_aad_document(*, envelope_id: str, institution_id: str, tenant_id: str, isolation_profile_digest: str, key_reference_digest: str, subject_artifact_digest: str) -> dict[str, str]:
+def encrypted_evidence_aad_document(*, envelope_id: str, institution_id: str, tenant_id: str, isolation_profile_digest: str, key_reference_digest: str, subject_artifact_digest: str, plaintext_digest: str, encrypted_at: int) -> dict[str, object]:
     return {
         "purpose": "modelriskops.tenant-encrypted-governance-evidence.v1",
         "envelope_id": envelope_id,
@@ -735,6 +738,8 @@ def encrypted_evidence_aad_document(*, envelope_id: str, institution_id: str, te
         "isolation_profile_digest": isolation_profile_digest,
         "key_reference_digest": key_reference_digest,
         "subject_artifact_digest": subject_artifact_digest,
+        "plaintext_digest": plaintext_digest,
+        "encrypted_at": encrypted_at,
     }
 
 
@@ -754,6 +759,7 @@ def encrypt_governance_evidence(plaintext: bytes, *, envelope_id: str, instituti
     if encryptor.institution_id != institution_id or encryptor.tenant_id != tenant_id or encryptor.key_id != key_reference.key_id or encryptor.key_version != key_reference.key_version or encryptor.algorithm != CryptoAlgorithm.AES_256_GCM.value:
         raise GovernanceError("evidence encryptor does not match exact tenant key reference")
     nonce = secrets.token_bytes(12)
+    plaintext_digest = _sha256_bytes(plaintext)
     aad_document = encrypted_evidence_aad_document(
         envelope_id=envelope_id,
         institution_id=institution_id,
@@ -761,6 +767,8 @@ def encrypt_governance_evidence(plaintext: bytes, *, envelope_id: str, instituti
         isolation_profile_digest=isolation_profile.evidence_digest,
         key_reference_digest=key_reference.evidence_digest,
         subject_artifact_digest=subject_artifact_digest,
+        plaintext_digest=plaintext_digest,
+        encrypted_at=encrypted_at,
     )
     aad = canonical_json(aad_document).encode("utf-8")
     ciphertext = encryptor.encrypt(nonce, plaintext, aad)
@@ -776,7 +784,7 @@ def encrypt_governance_evidence(plaintext: bytes, *, envelope_id: str, instituti
         key_version=key_reference.key_version,
         algorithm=CryptoAlgorithm.AES_256_GCM.value,
         subject_artifact_digest=subject_artifact_digest,
-        plaintext_digest=_sha256_bytes(plaintext),
+        plaintext_digest=plaintext_digest,
         aad_digest=_sha256_bytes(aad),
         nonce_base64url=_encode(nonce),
         ciphertext_base64url=_encode(ciphertext),
@@ -786,12 +794,18 @@ def encrypt_governance_evidence(plaintext: bytes, *, envelope_id: str, instituti
 
 def decrypt_governance_evidence(envelope: EncryptedGovernanceEvidence, *, isolation_registry: TenantIsolationRegistry, key_registry: InstitutionCryptoKeyRegistry, decryptor: TenantEvidenceDecryptor, now: int) -> bytes:
     _timestamp("now", now)
+    if envelope.encrypted_at > now:
+        raise GovernanceError("encrypted governance evidence cannot be from the future")
     profile = isolation_registry.profile_by_digest(envelope.institution_id, envelope.tenant_id, envelope.isolation_profile_digest)
     for digest in profile.rls_policy_digests:
         isolation_registry._policy_by_digest(profile.institution_id, digest)
     key = key_registry.by_digest(envelope.institution_id, envelope.tenant_id, envelope.key_reference_digest)
     if key.key_id != envelope.key_id or key.key_version != envelope.key_version or key.purpose is not CryptoKeyPurpose.EVIDENCE_ENCRYPTION:
         raise GovernanceError("encrypted evidence key identity mismatch")
+    if not (key.not_before <= envelope.encrypted_at < key.not_after):
+        raise GovernanceError("evidence encryption key was not valid at encryption time")
+    if key_registry.status_at(key, at=envelope.encrypted_at) is not CryptoKeyStatus.ACTIVE:
+        raise GovernanceError("evidence encryption key was not active at encryption time")
     if key_registry.status_at(key, at=now) is CryptoKeyStatus.DISABLED:
         raise GovernanceError("disabled evidence-encryption key cannot decrypt evidence")
     if decryptor.institution_id != envelope.institution_id or decryptor.tenant_id != envelope.tenant_id or decryptor.key_id != envelope.key_id or decryptor.key_version != envelope.key_version or decryptor.algorithm != CryptoAlgorithm.AES_256_GCM.value:
@@ -803,6 +817,8 @@ def decrypt_governance_evidence(envelope: EncryptedGovernanceEvidence, *, isolat
         isolation_profile_digest=envelope.isolation_profile_digest,
         key_reference_digest=envelope.key_reference_digest,
         subject_artifact_digest=envelope.subject_artifact_digest,
+        plaintext_digest=envelope.plaintext_digest,
+        encrypted_at=envelope.encrypted_at,
     )
     aad = canonical_json(aad_document).encode("utf-8")
     if _sha256_bytes(aad) != envelope.aad_digest:
@@ -817,8 +833,15 @@ def decrypt_governance_evidence(envelope: EncryptedGovernanceEvidence, *, isolat
 
 
 def assert_encrypted_evidence_current(envelope: EncryptedGovernanceEvidence, *, isolation_registry: TenantIsolationRegistry, key_registry: InstitutionCryptoKeyRegistry, now: int) -> None:
+    _timestamp("now", now)
+    if envelope.encrypted_at > now:
+        raise GovernanceError("encrypted governance evidence cannot be from the future")
     profile = isolation_registry.profile_by_digest(envelope.institution_id, envelope.tenant_id, envelope.isolation_profile_digest)
     isolation_registry.assert_profile_current(profile)
     key = key_registry.by_digest(envelope.institution_id, envelope.tenant_id, envelope.key_reference_digest)
+    if not (key.not_before <= envelope.encrypted_at < key.not_after):
+        raise GovernanceError("evidence encryption key was not valid at encryption time")
+    if key_registry.status_at(key, at=envelope.encrypted_at) is not CryptoKeyStatus.ACTIVE:
+        raise GovernanceError("evidence encryption key was not active at encryption time")
     if key_registry.status_at(key, at=now) is CryptoKeyStatus.DISABLED:
         raise GovernanceError("encrypted governance evidence key is disabled")
