@@ -135,6 +135,9 @@ class ThirdPartyModelDependency:
     model_version_digest: str
     provider_id: str
     provider_profile_digest: str
+    provider_model_id: str
+    provider_model_version: str
+    provider_version_evidence_digest: str
     service_id: str
     service_description_digest: str
     materiality: DependencyMateriality
@@ -149,12 +152,15 @@ class ThirdPartyModelDependency:
             "version_id",
             "dependency_id",
             "provider_id",
+            "provider_model_id",
+            "provider_model_version",
             "service_id",
         ):
             object.__setattr__(self, name, _text(name, getattr(self, name)))
         _positive_int("dependency_version", self.dependency_version)
         _digest("model_version_digest", self.model_version_digest)
         _digest("provider_profile_digest", self.provider_profile_digest)
+        _digest("provider_version_evidence_digest", self.provider_version_evidence_digest)
         _digest("service_description_digest", self.service_description_digest)
         _timestamp("registered_at", self.registered_at)
         if not isinstance(self.materiality, DependencyMateriality):
@@ -353,6 +359,7 @@ class PortfolioAssessment:
     assessed_at: int
     state: PortfolioAssessmentState
     provider_exposures: tuple[ProviderExposure, ...]
+    critical_provider_ids: tuple[str, ...]
     third_party_exposure_bps: int
     high_critical_exposure_bps: int
     findings: tuple[str, ...]
@@ -371,6 +378,11 @@ class PortfolioAssessment:
         providers = tuple(item.provider_id for item in self.provider_exposures)
         if len(providers) != len(set(providers)):
             raise GovernanceError("provider exposure rows must be unique by provider")
+        critical = _canonical_text_tuple("critical_provider_ids", self.critical_provider_ids, allow_empty=True)
+        if critical != self.critical_provider_ids:
+            raise GovernanceError("critical provider identifiers must be canonically sorted and unique")
+        if any(provider_id not in set(providers) for provider_id in self.critical_provider_ids):
+            raise GovernanceError("critical provider identifiers must refer to portfolio provider exposure rows")
         if not 0 <= self.third_party_exposure_bps <= 10000:
             raise GovernanceError("third-party exposure must be between 0 and 10000 basis points")
         if not 0 <= self.high_critical_exposure_bps <= 10000:
@@ -693,6 +705,7 @@ class PortfolioRiskRegistry:
         provider_dependency_counts: dict[str, int] = {}
         provider_profiles: dict[str, ThirdPartyProviderProfile] = {}
         provider_exposure: dict[str, int] = {}
+        critical_providers: set[str] = set()
         third_party_exposure_bps = 0
         high_critical_exposure_bps = 0
         incomplete: set[str] = set()
@@ -716,6 +729,8 @@ class PortfolioRiskRegistry:
                 provider_models.setdefault(profile.provider_id, set()).add((position.model_id, position.version_id))
                 provider_dependency_counts[profile.provider_id] = provider_dependency_counts.get(profile.provider_id, 0) + 1
                 providers_for_position.add(profile.provider_id)
+                if dependency.materiality is DependencyMateriality.CRITICAL:
+                    critical_providers.add(profile.provider_id)
 
                 if assessed_at >= profile.due_diligence_expires_at:
                     incomplete.add(f"provider_due_diligence_expired:{profile.provider_id}")
@@ -777,6 +792,7 @@ class PortfolioRiskRegistry:
             assessed_at=assessed_at,
             state=state,
             provider_exposures=tuple(exposure_rows),
+            critical_provider_ids=tuple(sorted(critical_providers)),
             third_party_exposure_bps=third_party_exposure_bps,
             high_critical_exposure_bps=high_critical_exposure_bps,
             findings=findings,
