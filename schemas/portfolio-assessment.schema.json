@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": [
     "institution_id","portfolio_id","snapshot_digest","policy_digest","assessed_at","state",
-    "provider_exposures","third_party_exposure_bps","high_critical_exposure_bps","findings"
+    "provider_exposures","critical_provider_ids","third_party_exposure_bps","high_critical_exposure_bps","findings"
   ],
   "properties": {
     "institution_id": {"type":"string","minLength":1},
@@ -29,6 +29,7 @@
         }
       }
     },
+    "critical_provider_ids": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
     "third_party_exposure_bps": {"type":"integer","minimum":0,"maximum":10000},
     "high_critical_exposure_bps": {"type":"integer","minimum":0,"maximum":10000},
     "findings": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}}
