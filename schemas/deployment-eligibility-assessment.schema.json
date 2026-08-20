@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/deployment-eligibility-assessment.schema.json",
+  "title":"DeploymentEligibilityAssessment",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["institution_id","tenant_id","release_manifest_digest","state","assessed_at","deployment_performed"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},
+    "tenant_id":{"type":"string","minLength":1},
+    "release_manifest_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "state":{"enum":["reference_ready","ineligible"]},
+    "assessed_at":{"type":"integer","minimum":1},
+    "deployment_performed":{"const":false}
+  }
+}
