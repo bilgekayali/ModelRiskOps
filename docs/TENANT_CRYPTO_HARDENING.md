@@ -40,7 +40,7 @@ Private signing keys and AES key bytes are never stored by ModelRiskOps. AES-256
 
 A KMS/HSM reference is represented governance evidence. It does not prove that a real hardware boundary exists, that a provider enforces custody correctly, or that production IAM permits only intended callers.
 
-## Rotation, retirement and disablement
+## Rotation, retirement, expiry and disablement
 
 Key references are append-only and version-contiguous. Rotated versions must use distinct `key_id` values.
 
@@ -52,9 +52,9 @@ Lifecycle transitions are restricted to:
 
 `disabled` is terminal.
 
-For new cryptographic operations, ModelRiskOps selects the latest eligible key version only. It never falls back to an older active version after a newer version has been retired or disabled. This prevents version rollback.
+For new cryptographic operations, ModelRiskOps selects the latest introduced key version only and then requires that exact version to be unexpired and active. It never falls back to an older active version after a newer version has been retired, disabled **or expired**. This prevents version rollback through lifecycle state or validity-window manipulation.
 
-Historical signatures remain verifiable against the key state at signing time. New operations require the current active key at the exact represented operation time.
+Historical signatures remain verifiable against the key state and validity interval at signing time. New operations require the current active key at the exact represented operation time.
 
 ## Signed configuration-change chain
 
@@ -71,28 +71,32 @@ Historical signatures remain verifiable against the key state at signing time. N
 
 `ConfigurationChangeRegistry` forms an append-only per-tenant chain. A change cannot become current before `effective_at`, cannot skip sequence numbers, cannot fork from the wrong previous change digest and cannot move backward in signing time.
 
+Historical signature verification remains tied to the key state at `signed_at`. Activation is stricter: if the signing key has subsequently become `disabled` before the change is appended/effective, the change cannot become current. This preserves historical signature evidence without allowing a compromised/disabled key to activate pending configuration.
+
 The registry records configuration evidence only. It does not apply configuration to databases, IAM, KMS/HSM, deployment systems or model runtimes.
 
 ## Tenant-bound encrypted governance evidence
 
-`EncryptedGovernanceEvidence` represents AES-256-GCM protected evidence produced by a caller-supplied encryptor. The core selects a fresh 96-bit nonce and constructs canonical AAD binding:
+`EncryptedGovernanceEvidence` represents AES-256-GCM protected evidence produced by a caller-supplied encryptor. The core selects a fresh 96-bit nonce and constructs canonical authenticated AAD binding:
 
 - envelope identity;
 - institution identity;
 - tenant identity;
 - exact tenant-isolation-profile digest;
-- exact encryption-key reference digest; and
-- exact subject artifact digest.
+- exact encryption-key reference digest;
+- exact subject artifact digest;
+- plaintext SHA-256 digest; and
+- represented `encrypted_at` time.
 
-The envelope records plaintext SHA-256, AAD SHA-256, nonce and ciphertext. It never records symmetric key bytes.
+The envelope records plaintext SHA-256, AAD SHA-256, nonce and ciphertext. It never records symmetric key bytes. Because the represented encryption time and plaintext digest are included in authenticated AAD, changing either metadata field causes deterministic verification/authentication failure rather than silently rewriting chronology.
 
-New encryption requires the exact current tenant-isolation profile and current active encryption key. Tenant/key substitutions fail closed through scope/currentness checks and AES-GCM authentication.
+New encryption requires the exact current tenant-isolation profile and current active encryption key. Decryption rejects future-dated evidence and verifies that the referenced key was within its validity interval and `active` at `encrypted_at`. Tenant/key/subject/time substitutions fail closed through scope/currentness checks, AAD binding and AES-GCM authentication.
 
 ## Historical decryptability vs current eligibility
 
-Isolation drift must not destroy audit history. Therefore historical encrypted evidence can still be decrypted against its exact registered historical isolation profile and key reference when that key is not disabled.
+Isolation drift must not destroy audit history. Therefore historical encrypted evidence can still be decrypted against its exact registered historical isolation profile and key reference when that key is not disabled, provided the key was valid and active at the authenticated encryption time.
 
-`assert_encrypted_evidence_current()` is a separate current-use check. It fails after isolation-profile/RLS drift or key disablement. This preserves immutable historical evidence without presenting stale isolation state as current.
+`assert_encrypted_evidence_current()` is a separate current-use check. It fails after isolation-profile/RLS drift, future-dated chronology, invalid key-at-encryption-time evidence or key disablement. This preserves immutable historical evidence without presenting stale isolation state as current.
 
 ## Explicit non-claims
 
