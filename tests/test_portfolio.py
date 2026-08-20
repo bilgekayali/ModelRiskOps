@@ -126,6 +126,9 @@ class PortfolioFixture:
             model_version_digest=self.versions["model-a"].evidence_digest,
             provider_id="provider-x",
             provider_profile_digest=self.provider.evidence_digest,
+            provider_model_id="vendor-model-a",
+            provider_model_version="2026.08",
+            provider_version_evidence_digest=D0,
             service_id="api-a",
             service_description_digest=D5,
             materiality=DependencyMateriality.CRITICAL,
@@ -142,6 +145,9 @@ class PortfolioFixture:
             model_version_digest=self.versions["model-a"].evidence_digest,
             provider_id="provider-x",
             provider_profile_digest=self.provider.evidence_digest,
+            provider_model_id="vendor-model-a",
+            provider_model_version="2026.08",
+            provider_version_evidence_digest=D0,
             service_id="api-a-secondary",
             service_description_digest=D6,
             materiality=DependencyMateriality.NON_MATERIAL,
@@ -158,6 +164,9 @@ class PortfolioFixture:
             model_version_digest=self.versions["model-b"].evidence_digest,
             provider_id="provider-x",
             provider_profile_digest=self.provider.evidence_digest,
+            provider_model_id="vendor-model-b",
+            provider_model_version="2026.07",
+            provider_version_evidence_digest=D4,
             service_id="api-b",
             service_description_digest=D7,
             materiality=DependencyMateriality.MATERIAL,
@@ -275,6 +284,8 @@ def test_provider_profiles_and_dependencies_are_versioned_and_exact() -> None:
         fx.dep_a,
         dependency_version=2,
         provider_profile_digest=provider_v2.evidence_digest,
+        provider_model_version="2026.09",
+        provider_version_evidence_digest=DF,
         registered_at=210,
     )
     fx.registry.register_dependency(dep_v2)
@@ -351,6 +362,7 @@ def test_provider_concentration_counts_model_exposure_once_per_provider() -> Non
     assert assessment.state is PortfolioAssessmentState.BREACHED
     assert assessment.third_party_exposure_bps == 8000
     assert assessment.high_critical_exposure_bps == 5000
+    assert assessment.critical_provider_ids == ("provider-x",)
     assert len(assessment.provider_exposures) == 1
     row = assessment.provider_exposures[0]
     assert row.provider_id == "provider-x"
@@ -364,6 +376,7 @@ def test_current_complete_evidence_can_assess_healthy() -> None:
     fx = PortfolioFixture()
     assessment = fx.registry.assess_portfolio(fx.snapshot, permissive_policy(), assessed_at=160)
     assert assessment.state is PortfolioAssessmentState.HEALTHY
+    assert assessment.critical_provider_ids == ("provider-x",)
     assert assessment.findings == ()
 
 
