@@ -75,6 +75,11 @@ from .hardening import (
     encrypted_evidence_aad_document, render_postgres_rls_sql,
     sign_configuration_change, verify_signed_configuration_change,
 )
+from .deployment import (
+    DeploymentEligibilityAssessment, DeploymentReleaseManifest, DeploymentState,
+    HttpsEgressPolicy, IsolatedWorkerProfile, ProductionDeploymentRegistry,
+    RecoveryCheckpoint, RollbackPlan, RuntimeIdentityProfile, UpgradePlan,
+)
 from .dossier import (
     DossierEntry, DossierGovernanceState, GovernanceDossier, build_governance_dossier,
     dossier_from_dict, verify_governance_dossier,
@@ -122,8 +127,11 @@ __all__ = [
     "TenantIsolationProfile", "TenantIsolationRegistry", "assert_encrypted_evidence_current",
     "decrypt_governance_evidence", "encrypt_governance_evidence", "encrypted_evidence_aad_document",
     "render_postgres_rls_sql", "sign_configuration_change", "verify_signed_configuration_change",
-    "DossierEntry", "DossierGovernanceState", "GovernanceDossier", "build_governance_dossier",
-    "dossier_from_dict", "verify_governance_dossier", "build_signed_change_dossier", "build_genai_governance_dossier",
+    "DeploymentEligibilityAssessment", "DeploymentReleaseManifest", "DeploymentState", "HttpsEgressPolicy",
+    "IsolatedWorkerProfile", "ProductionDeploymentRegistry", "RecoveryCheckpoint", "RollbackPlan",
+    "RuntimeIdentityProfile", "UpgradePlan", "DossierEntry", "DossierGovernanceState", "GovernanceDossier",
+    "build_governance_dossier", "dossier_from_dict", "verify_governance_dossier", "build_signed_change_dossier",
+    "build_genai_governance_dossier",
 ]
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
