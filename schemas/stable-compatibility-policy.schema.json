@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/stable-compatibility-policy.schema.json",
+  "title": "ModelRiskOps Stable Compatibility Policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "stable_since_version", "compatibility_series", "semver_required",
+    "breaking_change_requires_major", "python_symbol_removal_requires_major",
+    "cli_command_removal_requires_major", "json_schema_removal_requires_major",
+    "json_required_field_removal_requires_major", "json_enum_value_removal_requires_major",
+    "unknown_json_fields_rejected", "deprecation_min_minor_releases", "declared_at"
+  ],
+  "properties": {
+    "stable_since_version": {"const": "1.0.0"},
+    "compatibility_series": {"const": "1.x"},
+    "semver_required": {"const": true},
+    "breaking_change_requires_major": {"const": true},
+    "python_symbol_removal_requires_major": {"const": true},
+    "cli_command_removal_requires_major": {"const": true},
+    "json_schema_removal_requires_major": {"const": true},
+    "json_required_field_removal_requires_major": {"const": true},
+    "json_enum_value_removal_requires_major": {"const": true},
+    "unknown_json_fields_rejected": {"const": true},
+    "deprecation_min_minor_releases": {"type": "integer", "minimum": 2, "maximum": 12},
+    "declared_at": {"type": "integer", "minimum": 1}
+  }
+}
