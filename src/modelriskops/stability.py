@@ -227,6 +227,7 @@ class SecurityReviewItem:
 @dataclass(frozen=True, slots=True)
 class IndependentSecurityReviewChecklist:
     release_version: str
+    reviewed_repository_digest: str
     reviewer_id: str
     reviewer_independence_confirmed: bool
     items: tuple[SecurityReviewItem, ...]
@@ -235,6 +236,7 @@ class IndependentSecurityReviewChecklist:
     def __post_init__(self) -> None:
         if _semver("release_version", self.release_version) != "1.0.0":
             raise GovernanceError("independent security review must target 1.0.0")
+        _digest("reviewed_repository_digest", self.reviewed_repository_digest)
         object.__setattr__(self, "reviewer_id", _text("reviewer_id", self.reviewer_id))
         if self.reviewer_independence_confirmed is not True:
             raise GovernanceError("reviewer independence must be explicitly confirmed by the reviewer")
