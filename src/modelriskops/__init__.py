@@ -129,6 +129,23 @@ from .genai_change import (
     create_genai_model_change_proposal,
 )
 from .genai_runtime import assess_genai_evaluation, build_genai_governance_dossier
+from .portfolio import (
+    DataAccessLevel,
+    DependencyMateriality,
+    PortfolioAssessment,
+    PortfolioAssessmentState,
+    PortfolioEvidencePackage,
+    PortfolioPosition,
+    PortfolioRiskPolicy,
+    PortfolioRiskRegistry,
+    PortfolioSnapshot,
+    ProviderExposure,
+    Substitutability,
+    ThirdPartyExitPlan,
+    ThirdPartyModelDependency,
+    ThirdPartyProviderProfile,
+    default_portfolio_risk_policy,
+)
 from .dossier import (
     DossierEntry,
     DossierGovernanceState,
@@ -252,6 +269,21 @@ __all__ = [
     "assert_genai_change_proposal_current",
     "create_genai_change_implementation_evidence",
     "assert_genai_change_implementation_current",
+    "DataAccessLevel",
+    "DependencyMateriality",
+    "PortfolioAssessment",
+    "PortfolioAssessmentState",
+    "PortfolioEvidencePackage",
+    "PortfolioPosition",
+    "PortfolioRiskPolicy",
+    "PortfolioRiskRegistry",
+    "PortfolioSnapshot",
+    "ProviderExposure",
+    "Substitutability",
+    "ThirdPartyExitPlan",
+    "ThirdPartyModelDependency",
+    "ThirdPartyProviderProfile",
+    "default_portfolio_risk_policy",
     "DossierEntry",
     "DossierGovernanceState",
     "GovernanceDossier",
@@ -262,4 +294,4 @@ __all__ = [
     "build_genai_governance_dossier",
 ]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
