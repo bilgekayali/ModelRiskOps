@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/institution-crypto-key-reference.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["institution_id","tenant_id","purpose","key_version","key_id","custody","algorithm","public_key_base64url","not_before","not_after","registered_at"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},"tenant_id":{"type":"string","minLength":1},"purpose":{"enum":["config_signing","evidence_encryption"]},
+    "key_version":{"type":"integer","minimum":1},"key_id":{"type":"string","minLength":1},"custody":{"enum":["kms","hsm"]},"algorithm":{"enum":["Ed25519","AES-256-GCM"]},
+    "public_key_base64url":{"type":["string","null"],"pattern":"^[A-Za-z0-9_-]+$"},"not_before":{"type":"integer","minimum":0},"not_after":{"type":"integer","minimum":0},"registered_at":{"type":"integer","minimum":0}
+  },
+  "allOf":[
+    {"if":{"properties":{"purpose":{"const":"config_signing"}},"required":["purpose"]},"then":{"properties":{"algorithm":{"const":"Ed25519"},"public_key_base64url":{"type":"string","pattern":"^[A-Za-z0-9_-]+$"}}}},
+    {"if":{"properties":{"purpose":{"const":"evidence_encryption"}},"required":["purpose"]},"then":{"properties":{"algorithm":{"const":"AES-256-GCM"},"public_key_base64url":{"type":"null"}}}}
+  ]
+}

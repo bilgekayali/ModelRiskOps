@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/encrypted-governance-evidence.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["envelope_id","institution_id","tenant_id","isolation_profile_digest","key_reference_digest","key_id","key_version","algorithm","subject_artifact_digest","plaintext_digest","aad_digest","nonce_base64url","ciphertext_base64url","encrypted_at"],
+  "properties":{
+    "envelope_id":{"type":"string","minLength":1},"institution_id":{"type":"string","minLength":1},"tenant_id":{"type":"string","minLength":1},
+    "isolation_profile_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"key_reference_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"key_id":{"type":"string","minLength":1},
+    "key_version":{"type":"integer","minimum":1},"algorithm":{"const":"AES-256-GCM"},"subject_artifact_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "plaintext_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"aad_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "nonce_base64url":{"type":"string","pattern":"^[A-Za-z0-9_-]+$"},"ciphertext_base64url":{"type":"string","pattern":"^[A-Za-z0-9_-]+$"},"encrypted_at":{"type":"integer","minimum":0}
+  }
+}

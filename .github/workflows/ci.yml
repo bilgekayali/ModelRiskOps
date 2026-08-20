@@ -60,8 +60,13 @@ jobs:
               AssuranceEvidenceRegistry,
               AssuranceFramework,
               EvidenceCoverage,
+              TenantIsolationRegistry,
+              InstitutionCryptoKeyRegistry,
+              CryptoKeyPurpose,
+              CryptoAlgorithm,
+              EncryptedGovernanceEvidence,
           )
-          assert modelriskops.__version__ == "0.6.0"
+          assert modelriskops.__version__ == "0.7.0"
           assert SigningKeyRegistry is not None
           assert ChangeMateriality.MATERIAL.value == "material"
           assert FoundationModelDependency is not None
@@ -75,6 +80,11 @@ jobs:
           assert AssuranceEvidenceRegistry is not None
           assert AssuranceFramework.FEDERAL_RESERVE_SR_26_2.value == "federal_reserve_sr_26_2"
           assert EvidenceCoverage.GAP.value == "gap"
+          assert TenantIsolationRegistry is not None
+          assert InstitutionCryptoKeyRegistry is not None
+          assert CryptoKeyPurpose.EVIDENCE_ENCRYPTION.value == "evidence_encryption"
+          assert CryptoAlgorithm.AES_256_GCM.value == "AES-256-GCM"
+          assert EncryptedGovernanceEvidence is not None
           print(modelriskops.__version__)
           PY
           /tmp/modelriskops-wheel/bin/modelriskops --help >/dev/null

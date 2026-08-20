@@ -4,30 +4,45 @@
 
 ## Summary
 
-ModelRiskOps is an open-source reference architecture for governing analytical, statistical, machine-learning, AI and generative-AI systems through a controlled lifecycle: inventory, risk classification, independent validation, approval, monitoring, signed change/revalidation evidence, AI/GenAI overlays, portfolio/third-party risk and framework assurance mappings.
+ModelRiskOps is an open-source reference architecture for governing analytical, statistical, machine-learning, AI and generative-AI systems through a controlled lifecycle: inventory, risk classification, independent validation, approval, monitoring, signed change/revalidation evidence, AI/GenAI overlays, portfolio/third-party risk, framework assurance mappings, tenant-isolation metadata and cryptographic governance evidence.
 
-Current package boundary: **ModelRiskOps v0.6.0 — Assurance Mappings**.
+Current package boundary: **ModelRiskOps v0.7.0 — Tenant and Cryptographic Hardening**.
 
-The project is designed for regulated and high-assurance environments. It is not a model-training framework, automated model validator, production monitoring platform, legal/compliance decision engine, certification product, regulator gateway or substitute for independent expert judgement.
+The project is designed for regulated and high-assurance environments. It is not a model-training framework, automated model validator, production monitoring platform, legal/compliance decision engine, certification product, KMS/HSM product, database security product, regulator gateway or substitute for independent expert judgement.
 
-## v0.6.0 assurance mappings
+## v0.7.0 tenant and cryptographic hardening
 
-v0.6 extends the v0.5 governance evidence with a strict offline framework crosswalk:
+v0.7 extends the v0.6 evidence/control plane with explicit tenant and cryptographic hardening contracts:
+
+- `PostgresRlsPolicy` represents strict institution+tenant PostgreSQL RLS predicates and renders reference DDL with both `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY`;
+- SQL identifiers and `modelriskops.*` session settings are syntactically constrained before rendering;
+- `TenantIsolationProfile` binds institution/tenant identity, governed environment, database role, namespace digest and exact current RLS policy digests;
+- RLS policies and isolation profiles are append-only/version-contiguous; historical exact retries remain idempotent while stale policies/profiles fail current-use validation;
+- `InstitutionCryptoKeyReference` represents institution-owned KMS/HSM key metadata for Ed25519 configuration signing or AES-256-GCM evidence encryption;
+- private signing keys and AES key bytes are never stored; AES references structurally reject embedded symmetric key material;
+- key versions are contiguous, rotated versions require distinct `key_id` values, and lifecycle transitions are limited to `active -> retired|disabled` and `retired -> disabled`;
+- new cryptographic operations use the **latest eligible key version only**, preventing rollback to an older active key after a newer key is retired or disabled;
+- `ConfigurationChangeRequest` + `SignedConfigurationChange` form an exact tenant-scoped Ed25519 change chain with sequence, previous-change digest, configuration digests, human requester identity and effective-time controls;
+- configuration evidence cannot become current before `effective_at`, cannot fork the exact change chain and is not automatically applied to any external system;
+- `EncryptedGovernanceEvidence` binds AES-256-GCM ciphertext to exact tenant, isolation profile, key reference and subject-artifact digests through canonical AAD and a fresh 96-bit nonce;
+- historical encrypted evidence remains decryptable against exact historical registered metadata when the key is not disabled, while `assert_encrypted_evidence_current()` separately fails closed after isolation drift or key disablement;
+- seven strict Draft 2020-12 schemas, adversarial tests, Python 3.11/3.12/3.13 clean-wheel CI and a dedicated Tenant and Cryptographic Hardening Boundary cover the release.
+
+RLS rendering is reference output, not deployed-RLS proof. KMS/HSM references are governance metadata, not hardware-custody or attestation proof. Cryptographic operations are performed only through caller/institution-supplied signer/encryptor/decryptor interfaces whose identities must match the exact registered key references.
+
+See [v0.7 Tenant and Cryptographic Hardening](docs/TENANT_CRYPTO_HARDENING.md).
+
+## v0.6.0 assurance mappings retained
+
+The v0.6 boundary remains intact:
 
 - `AssuranceMappingProfile` defines an institution-owned, versioned required-reference catalog for one exact supported framework version and binds the source catalog/document digest;
-- supported framework identities are Federal Reserve SR 26-2, NIST AI RMF 1.0, NIST AI 600-1, ISO/IEC 42001:2023 and the EU AI Act consolidated revision represented by this release as `2024/1689@2026-07-27`;
-- `AssuranceScope` binds one exact governed subject/context to one current mapping profile per framework;
-- `AssuranceApplicabilityAssertion` requires explicit human applicability decisions; applicable EU AI Act assertions additionally require at least one human-confirmed operator role;
-- `AssuranceEvidenceReference` binds exact artifact digests, artifact type, source component and represented evidence basis;
-- `AssuranceCrosswalkEntry` records only `supported`, `partial`, `gap` or `not_applicable`; supported/partial require exact evidence references and gap/not-applicable cannot carry them;
-- mapping chronology rejects evidence registered after the represented mapping time;
-- package construction is closed over the mapping profile: **every required reference** must have exactly one applicability assertion and one crosswalk entry, preventing favorable-reference cherry-picking;
-- per-framework results are deterministic counts, not compliance scores or percentages;
-- mapping-profile drift preserves historical package verification while `assert_package_current()` fails closed for current-use claims;
-- the final package structurally fixes `certification_claimed=false`, `conformity_claimed=false`, `legal_compliance_determined=false`, `supervisory_acceptance_claimed=false`, and `requires_human_review=true`;
-- six strict Draft 2020-12 schemas, adversarial tests, Python 3.11/3.12/3.13 clean-wheel CI and a dedicated Assurance Mappings Boundary cover the release.
-
-Framework names, versions and reference catalogs are evidence/governance inputs. ModelRiskOps does not infer legal applicability, compliance, conformity, certification, supervisory sufficiency or regulator acceptance.
+- supported framework identities are Federal Reserve SR 26-2, NIST AI RMF 1.0, NIST AI 600-1, ISO/IEC 42001:2023 and the EU AI Act consolidated revision represented as `2024/1689@2026-07-27`;
+- applicability is explicit human evidence, including human-confirmed EU AI Act operator roles;
+- package construction is closed over every required reference, preventing favorable-reference cherry-picking;
+- mapping-profile drift preserves historical package verification while current-use validation fails closed;
+- coverage labels/counts are evidence classifications, not compliance scores;
+- certification, conformity, legal-compliance and supervisory-acceptance claims are structurally prohibited.
 
 See [v0.6 Assurance Mappings](docs/ASSURANCE_MAPPINGS.md).
 
@@ -80,7 +95,9 @@ A healthy portfolio assessment does not establish vendor safety, solvency, outso
 
 A v0.6 `supported` crosswalk entry means only that a human mapper represented exact evidence as support for one exact reference. It does **not** establish legal satisfaction, conformity, certification, operating effectiveness or supervisory acceptance.
 
-Private-key custody, KMS/HSM integration, trusted timestamping, external immutable anchoring, production IAM, tenant cryptographic isolation and third-party attestation remain later hardening milestones.
+A v0.7 tenant-isolation profile and rendered RLS policy do **not** prove live tenant isolation. A KMS/HSM key reference does **not** prove hardware custody or non-exportability. An encrypted evidence envelope proves only the represented cryptographic binding under the caller-supplied cryptographic interface and exact registered metadata.
+
+Actual production PostgreSQL enforcement, cloud IAM, KMS/HSM custody/attestation, secret management, network isolation, trusted timestamping, external immutable anchoring, release provenance, recovery and production operational controls remain external responsibilities and/or v0.8 production-reference work.
 
 ## Standards posture
 
@@ -90,7 +107,7 @@ Current design inputs/framework identities include:
 - NIST **AI Risk Management Framework 1.0** (NIST AI 100-1);
 - NIST **AI 600-1 — Generative AI Profile**;
 - ISO/IEC **42001:2023**; and
-- Regulation (EU) **2024/1689** — EU Artificial Intelligence Act, with the current consolidated EUR-Lex revision represented by v0.6 as `2024/1689@2026-07-27`.
+- Regulation (EU) **2024/1689** — EU Artificial Intelligence Act, with the current consolidated EUR-Lex revision represented by v0.6/v0.7 as `2024/1689@2026-07-27`.
 
 These are architecture and assurance inputs, not claims of legal applicability, compliance, supervisory approval, vendor safety, conformity or certification.
 
@@ -100,11 +117,13 @@ These are architecture and assurance inputs, not claims of legal applicability, 
 - Governance decisions bind to exact model/version and evidence digests rather than mutable names.
 - Framework mapping profiles are institution-owned, versioned and source-digest bound.
 - Assurance packaging is complete over the declared required-reference catalog; favorable-reference cherry-picking fails closed.
-- Coverage labels are evidence classifications, not compliance conclusions.
-- Historical evidence is preserved rather than silently overwritten; current-use validation is separate and fail closed.
+- Tenant isolation metadata is append-only/versioned and currentness is distinct from historical evidence.
+- Key rotation is monotonic for new operations; older key versions never regain current status by fallback.
+- Secret key material is not serialized by the governance registry.
+- Historical encrypted evidence remains reproducible/decryptable independently from current-isolation eligibility.
 - Future evidence cannot satisfy an earlier represented governance time.
 - Regulatory mappings are separated from legal conclusions and certification claims.
-- The governance core does not execute, train, deploy, call, probe or operate models, providers, regulators or standards services.
+- The governance core does not execute, train, deploy, call, probe or operate models, providers, regulators, standards services, databases, KMS or HSM systems.
 
 ## Roadmap direction
 
