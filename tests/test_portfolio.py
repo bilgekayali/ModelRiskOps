@@ -317,8 +317,9 @@ def test_exit_plan_requires_exact_current_dependency_and_testing_pair() -> None:
     fx = PortfolioFixture()
     with pytest.raises(GovernanceError, match="supplied together"):
         replace(fx.exit_a, tested_at=140, test_evidence_digest=None)
+    backdated = replace(fx.exit_a, plan_version=2, created_at=105)
     with pytest.raises(GovernanceError, match="cannot predate"):
-        replace(fx.exit_a, created_at=105)
+        fx.registry.register_exit_plan(backdated)
 
 
 def test_portfolio_weights_and_risk_decision_binding_fail_closed() -> None:
@@ -332,8 +333,16 @@ def test_portfolio_weights_and_risk_decision_binding_fail_closed() -> None:
     for dependency in (fx.dep_a, fx.dep_a2, fx.dep_b):
         fresh.register_dependency(dependency)
     bad_risk = replace(fx.risks["model-a"], residual_tier=RiskTier.CRITICAL)
+    bad_risk_position = replace(
+        fx.snapshot.positions[0],
+        risk_decision_digest=bad_risk.evidence_digest,
+    )
+    bad_snapshot = replace(
+        fx.snapshot,
+        positions=(bad_risk_position,) + fx.snapshot.positions[1:],
+    )
     with pytest.raises(GovernanceError, match="residual risk tier"):
-        fresh.register_snapshot(fx.snapshot, (bad_risk, fx.risks["model-b"], fx.risks["model-c"]))
+        fresh.register_snapshot(bad_snapshot, (bad_risk, fx.risks["model-b"], fx.risks["model-c"]))
 
 
 def test_provider_concentration_counts_model_exposure_once_per_provider() -> None:
@@ -432,6 +441,37 @@ def test_inventory_drift_invalidates_registered_snapshot_currentness() -> None:
     new_version = make_version("model-d", "7")
     fx.inventory.register_model(new_record)
     fx.inventory.register_version(new_version)
+    with pytest.raises(GovernanceError, match="inventory snapshot is stale"):
+        fx.registry.assert_snapshot_current(fx.snapshot)
+
+
+def test_exact_historical_retries_remain_idempotent_after_provider_drift() -> None:
+    fx = PortfolioFixture()
+    provider_v2 = replace(
+        fx.provider,
+        profile_version=2,
+        due_diligence_evidence_digest=DF,
+        registered_at=200,
+        due_diligence_expires_at=1200,
+        contract_expires_at=1300,
+    )
+    fx.registry.register_provider_profile(provider_v2)
+    assert fx.registry.register_dependency(fx.dep_a) == fx.dep_a.evidence_digest
+    assert fx.registry.register_exit_plan(fx.exit_a) == fx.exit_a.evidence_digest
+    assert fx.registry.register_snapshot(fx.snapshot, fx.risks.values()) == fx.snapshot.evidence_digest
+    with pytest.raises(GovernanceError, match="different content"):
+        fx.registry.register_dependency(replace(fx.dep_a, service_description_digest=DF))
+    with pytest.raises(GovernanceError, match="different content"):
+        fx.registry.register_snapshot(replace(fx.snapshot, as_of_time=151), fx.risks.values())
+
+
+def test_exact_historical_snapshot_retry_remains_idempotent_after_inventory_drift() -> None:
+    fx = PortfolioFixture()
+    new_record = make_model("model-d")
+    new_version = make_version("model-d", "7")
+    fx.inventory.register_model(new_record)
+    fx.inventory.register_version(new_version)
+    assert fx.registry.register_snapshot(fx.snapshot, fx.risks.values()) == fx.snapshot.evidence_digest
     with pytest.raises(GovernanceError, match="inventory snapshot is stale"):
         fx.registry.assert_snapshot_current(fx.snapshot)
 
