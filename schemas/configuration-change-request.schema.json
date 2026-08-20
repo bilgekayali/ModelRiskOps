@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/configuration-change-request.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["change_id","institution_id","tenant_id","sequence","object_type","object_id","previous_configuration_digest","proposed_configuration_digest","change_reason_digest","requested_by_human_id","requested_at","effective_at"],
+  "properties":{
+    "change_id":{"type":"string","minLength":1},"institution_id":{"type":"string","minLength":1},"tenant_id":{"type":"string","minLength":1},"sequence":{"type":"integer","minimum":1},
+    "object_type":{"type":"string","minLength":1},"object_id":{"type":"string","minLength":1},
+    "previous_configuration_digest":{"type":["string","null"],"pattern":"^[0-9a-f]{64}$"},"proposed_configuration_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"change_reason_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "requested_by_human_id":{"type":"string","minLength":1},"requested_at":{"type":"integer","minimum":0},"effective_at":{"type":"integer","minimum":0}
+  }
+}
