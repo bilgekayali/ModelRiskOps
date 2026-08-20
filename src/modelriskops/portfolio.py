@@ -467,6 +467,19 @@ class PortfolioRiskRegistry:
             raise GovernanceError("unknown third-party provider") from exc
 
     def register_dependency(self, dependency: ThirdPartyModelDependency) -> str:
+        key = (
+            dependency.institution_id,
+            dependency.model_id,
+            dependency.version_id,
+            dependency.dependency_id,
+            dependency.dependency_version,
+        )
+        existing = self._dependencies.get(key)
+        if existing is not None:
+            if existing.evidence_digest != dependency.evidence_digest:
+                raise GovernanceError("dependency version already exists with different content")
+            return existing.evidence_digest
+
         model_version = self._inventory.version(
             dependency.institution_id,
             dependency.model_id,
@@ -480,18 +493,6 @@ class PortfolioRiskRegistry:
         if dependency.registered_at < provider.registered_at:
             raise GovernanceError("third-party dependency cannot predate its provider profile")
 
-        key = (
-            dependency.institution_id,
-            dependency.model_id,
-            dependency.version_id,
-            dependency.dependency_id,
-            dependency.dependency_version,
-        )
-        existing = self._dependencies.get(key)
-        if existing is not None:
-            if existing.evidence_digest != dependency.evidence_digest:
-                raise GovernanceError("dependency version already exists with different content")
-            return existing.evidence_digest
         identity = (
             dependency.institution_id,
             dependency.model_id,
@@ -543,6 +544,14 @@ class PortfolioRiskRegistry:
             raise GovernanceError("third-party dependency model version is stale")
 
     def register_exit_plan(self, plan: ThirdPartyExitPlan) -> str:
+        supplied_identity = (plan.institution_id, plan.model_id, plan.version_id, plan.dependency_id)
+        key = supplied_identity + (plan.plan_version,)
+        existing = self._exit_plans.get(key)
+        if existing is not None:
+            if existing.evidence_digest != plan.evidence_digest:
+                raise GovernanceError("exit-plan version already exists with different content")
+            return existing.evidence_digest
+
         dependency = self.dependency_by_digest(plan.dependency_digest)
         self.assert_dependency_current(dependency)
         expected_identity = (
@@ -551,18 +560,11 @@ class PortfolioRiskRegistry:
             dependency.version_id,
             dependency.dependency_id,
         )
-        supplied_identity = (plan.institution_id, plan.model_id, plan.version_id, plan.dependency_id)
         if supplied_identity != expected_identity:
             raise GovernanceError("exit plan does not belong to the bound dependency")
         if plan.created_at < dependency.registered_at:
             raise GovernanceError("exit plan cannot predate its dependency")
 
-        key = expected_identity + (plan.plan_version,)
-        existing = self._exit_plans.get(key)
-        if existing is not None:
-            if existing.evidence_digest != plan.evidence_digest:
-                raise GovernanceError("exit-plan version already exists with different content")
-            return existing.evidence_digest
         previous_version = self._current_exit_plan_versions.get(expected_identity, 0)
         if plan.plan_version != previous_version + 1:
             raise GovernanceError("exit-plan versions must be contiguous")
@@ -595,6 +597,13 @@ class PortfolioRiskRegistry:
         snapshot: PortfolioSnapshot,
         risk_decisions: Iterable[RiskDecision],
     ) -> str:
+        key = (snapshot.institution_id, snapshot.portfolio_id, snapshot.snapshot_version)
+        existing = self._snapshots.get(key)
+        if existing is not None:
+            if existing.evidence_digest != snapshot.evidence_digest:
+                raise GovernanceError("portfolio snapshot version already exists with different content")
+            return existing.evidence_digest
+
         if snapshot.inventory_snapshot_digest != self._inventory.snapshot_digest():
             raise GovernanceError("portfolio snapshot must bind the current inventory snapshot")
         decisions = {item.evidence_digest: item for item in risk_decisions}
@@ -635,12 +644,6 @@ class PortfolioRiskRegistry:
                 if dependency.registered_at > snapshot.as_of_time:
                     raise GovernanceError("portfolio snapshot cannot predate a bound third-party dependency")
 
-        key = (snapshot.institution_id, snapshot.portfolio_id, snapshot.snapshot_version)
-        existing = self._snapshots.get(key)
-        if existing is not None:
-            if existing.evidence_digest != snapshot.evidence_digest:
-                raise GovernanceError("portfolio snapshot version already exists with different content")
-            return existing.evidence_digest
         identity = (snapshot.institution_id, snapshot.portfolio_id)
         previous_version = self._current_snapshot_versions.get(identity, 0)
         if snapshot.snapshot_version != previous_version + 1:
