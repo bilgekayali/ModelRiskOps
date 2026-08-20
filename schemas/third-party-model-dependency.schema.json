@@ -5,7 +5,8 @@
   "additionalProperties": false,
   "required": [
     "institution_id","model_id","version_id","dependency_id","dependency_version",
-    "model_version_digest","provider_id","provider_profile_digest","service_id",
+    "model_version_digest","provider_id","provider_profile_digest","provider_model_id",
+    "provider_model_version","provider_version_evidence_digest","service_id",
     "service_description_digest","materiality","substitutability","data_access_level","registered_at"
   ],
   "properties": {
@@ -17,6 +18,9 @@
     "model_version_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
     "provider_id": {"type":"string","minLength":1},
     "provider_profile_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "provider_model_id": {"type":"string","minLength":1},
+    "provider_model_version": {"type":"string","minLength":1},
+    "provider_version_evidence_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
     "service_id": {"type":"string","minLength":1},
     "service_description_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
     "materiality": {"enum":["non_material","material","critical"]},
