@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/third-party-provider-profile.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id","provider_id","profile_version","legal_name","accountable_owner_id",
+    "service_jurisdictions","due_diligence_evidence_digest","contract_evidence_digest",
+    "security_assurance_evidence_digest","financial_resilience_evidence_digest",
+    "due_diligence_expires_at","contract_expires_at","registered_at"
+  ],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "provider_id": {"type":"string","minLength":1},
+    "profile_version": {"type":"integer","minimum":1},
+    "legal_name": {"type":"string","minLength":1},
+    "accountable_owner_id": {"type":"string","minLength":1},
+    "service_jurisdictions": {"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "due_diligence_evidence_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "contract_evidence_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "security_assurance_evidence_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "financial_resilience_evidence_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "due_diligence_expires_at": {"type":"integer","minimum":0},
+    "contract_expires_at": {"type":"integer","minimum":0},
+    "registered_at": {"type":"integer","minimum":0}
+  }
+}
