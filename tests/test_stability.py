@@ -208,8 +208,9 @@ class StableFixture:
             for item_id in REQUIRED_SECURITY_REVIEW_ITEMS
         )
         self.review = IndependentSecurityReviewChecklist(
-            release_version="1.0.0", reviewer_id="independent-reviewer",
-            reviewer_independence_confirmed=True, items=items, reviewed_at=270,
+            release_version="1.0.0", reviewed_repository_digest=dg("reviewed-repository"),
+            reviewer_id="independent-reviewer", reviewer_independence_confirmed=True,
+            items=items, reviewed_at=270,
         )
         self.scope = ResponsibilityScope(
             release_version="1.0.0", legal_advice_provided=False, regulatory_compliance_determined=False,
@@ -265,12 +266,14 @@ def test_complete_v1_baseline_registers_and_is_current() -> None:
     )
 
 
-def test_review_contract_rejects_missing_items_and_false_independence() -> None:
+def test_review_contract_rejects_missing_items_false_independence_and_bad_repository_digest() -> None:
     fx = StableFixture()
     with pytest.raises(GovernanceError, match="every required v1 item"):
         replace(fx.review, items=fx.review.items[:-1])
     with pytest.raises(GovernanceError, match="independence"):
         replace(fx.review, reviewer_independence_confirmed=False)
+    with pytest.raises(GovernanceError, match="reviewed_repository_digest"):
+        replace(fx.review, reviewed_repository_digest="not-a-digest")
 
 
 def test_risk_acceptance_requires_accountable_human_and_digest() -> None:
