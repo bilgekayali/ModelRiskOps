@@ -1,0 +1,10 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/crypto-key-lifecycle-state.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["institution_id","tenant_id","purpose","key_reference_digest","state_version","status","effective_at"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},"tenant_id":{"type":"string","minLength":1},"purpose":{"enum":["config_signing","evidence_encryption"]},
+    "key_reference_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"state_version":{"type":"integer","minimum":1},"status":{"enum":["active","retired","disabled"]},"effective_at":{"type":"integer","minimum":0}
+  }
+}
