@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/portfolio-evidence-package.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id","portfolio_id","snapshot_digest","policy_digest","assessment_digest",
+    "provider_profile_digests","dependency_digests","exit_plan_digests","state","generated_at"
+  ],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "portfolio_id": {"type":"string","minLength":1},
+    "snapshot_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "policy_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "assessment_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "provider_profile_digests": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[0-9a-f]{64}$"}},
+    "dependency_digests": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[0-9a-f]{64}$"}},
+    "exit_plan_digests": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[0-9a-f]{64}$"}},
+    "state": {"enum":["healthy","degraded","breached","incomplete"]},
+    "generated_at": {"type":"integer","minimum":0}
+  }
+}
