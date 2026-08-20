@@ -242,3 +242,16 @@ def test_release_contract_rejects_version_mismatch_and_execution_claims() -> Non
         replace(fx.release, package_version="0.8.1")
     with pytest.raises(GovernanceError, match="cannot claim deployment"):
         replace(fx.release, deployment_performed=True)
+
+
+def test_release_id_and_version_cannot_be_reused() -> None:
+    fx = Fixture()
+    fx.registry.register_release(fx.release)
+    reused = replace(
+        fx.release,
+        release_sequence=2,
+        source_commit_sha="b" * 40,
+        released_at=190,
+    )
+    with pytest.raises(GovernanceError, match="release_id must not be reused"):
+        fx.registry.register_release(reused)
