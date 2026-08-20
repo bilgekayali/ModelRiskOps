@@ -1,0 +1,135 @@
+name: Portfolio and Third-Party Model Risk Boundary
+
+on:
+  push:
+    branches:
+      - main
+      - "agent/**"
+    paths:
+      - "src/modelriskops/portfolio.py"
+      - "src/modelriskops/__init__.py"
+      - "tests/test_portfolio*.py"
+      - "schemas/third-party-*.json"
+      - "schemas/portfolio-*.json"
+      - "pyproject.toml"
+      - "README.md"
+      - "docs/PORTFOLIO_THIRD_PARTY.md"
+      - ".github/workflows/portfolio-third-party.yml"
+  pull_request:
+    paths:
+      - "src/modelriskops/portfolio.py"
+      - "src/modelriskops/__init__.py"
+      - "tests/test_portfolio*.py"
+      - "schemas/third-party-*.json"
+      - "schemas/portfolio-*.json"
+      - "pyproject.toml"
+      - "README.md"
+      - "docs/PORTFOLIO_THIRD_PARTY.md"
+      - ".github/workflows/portfolio-third-party.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  portfolio-third-party-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: python -m pip install -e '.[dev]'
+      - name: Run v0.5 portfolio regression tests
+        run: python -m pytest tests/test_portfolio.py tests/test_portfolio_schemas.py -q
+      - name: Verify v0.5 package and schema contracts
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import tomllib
+          import jsonschema
+
+          project = tomllib.load(open('pyproject.toml', 'rb'))
+          version = tuple(int(part) for part in project['project']['version'].split('.'))
+          assert version >= (0, 5, 0)
+          assert project['project']['dependencies'] == ['cryptography>=43,<46', 'jsonschema>=4.23,<5']
+
+          schemas = (
+              'third-party-provider-profile.schema.json',
+              'third-party-model-dependency.schema.json',
+              'third-party-exit-plan.schema.json',
+              'portfolio-risk-policy.schema.json',
+              'portfolio-snapshot.schema.json',
+              'portfolio-assessment.schema.json',
+              'portfolio-evidence-package.schema.json',
+          )
+          for filename in schemas:
+              payload = json.loads((Path('schemas') / filename).read_text(encoding='utf-8'))
+              assert payload['$schema'] == 'https://json-schema.org/draft/2020-12/schema'
+              assert payload['additionalProperties'] is False
+              jsonschema.Draft202012Validator.check_schema(payload)
+
+          dependency = json.loads(Path('schemas/third-party-model-dependency.schema.json').read_text())
+          assert dependency['properties']['materiality']['enum'] == ['non_material', 'material', 'critical']
+          assert dependency['properties']['substitutability']['enum'] == ['high', 'moderate', 'low', 'none']
+          assert dependency['properties']['data_access_level']['enum'] == ['none', 'non_sensitive', 'personal', 'sensitive']
+          policy = json.loads(Path('schemas/portfolio-risk-policy.schema.json').read_text())
+          assert policy['properties']['require_exit_plan_for_material']['const'] is True
+          assert policy['properties']['require_tested_exit_for_critical']['const'] is True
+          assert policy['properties']['degrade_low_substitutability']['const'] is True
+          assessment = json.loads(Path('schemas/portfolio-assessment.schema.json').read_text())
+          assert assessment['properties']['state']['enum'] == ['healthy', 'degraded', 'breached', 'incomplete']
+          PY
+      - name: Verify offline fail-closed portfolio surface
+        shell: bash
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          path = Path('src/modelriskops/portfolio.py')
+          source = path.read_text(encoding='utf-8')
+          tree = ast.parse(source, filename=str(path))
+          banned = {'asyncio', 'ftplib', 'http', 'requests', 'socket', 'subprocess', 'telnetlib', 'urllib'}
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  roots = {alias.name.split('.')[0] for alias in node.names}
+              elif isinstance(node, ast.ImportFrom) and node.module:
+                  roots = {node.module.split('.')[0]}
+              else:
+                  continue
+              blocked = roots & banned
+              if blocked:
+                  raise SystemExit(f'{path}: forbidden capability import(s): {sorted(blocked)}')
+
+          required_markers = (
+              'provider profile versions must be contiguous',
+              'third-party dependency versions must be contiguous',
+              'exit-plan versions must be contiguous',
+              'portfolio snapshot versions must be contiguous',
+              'third-party dependency must bind the current provider profile',
+              'portfolio snapshot must bind the current inventory snapshot',
+              'portfolio exposure weights must sum to exactly 10000 basis points',
+              'provider_due_diligence_expired',
+              'provider_contract_expired',
+              'missing_current_exit_plan',
+              'untested_critical_exit_plan',
+              'low_substitutability',
+              'provider_concentration_breach',
+              'high_critical_exposure_breach',
+              'portfolio assessment cannot predate its snapshot',
+              'portfolio evidence package does not reproduce from current evidence',
+          )
+          for marker in required_markers:
+              if marker not in source:
+                  raise SystemExit(f'missing v0.5 portfolio invariant: {marker}')
+
+          for marker in (
+              'requests.', 'httpx.', 'subprocess.', '.connect(', '.deploy(', '.train(',
+              '.predict(', '.infer(', '.invoke(', '.execute_tool('
+          ):
+              if marker in source:
+                  raise SystemExit(f'v0.5 portfolio core violates offline/reference boundary: {marker}')
+          PY
