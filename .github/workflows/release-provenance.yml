@@ -11,6 +11,8 @@ on:
       - "security-review/**"
       - "scripts/repository_review_digest.py"
       - "docs/**"
+      - "README.md"
+      - "SECURITY.md"
       - ".github/workflows/release-provenance.yml"
   push:
     tags:
