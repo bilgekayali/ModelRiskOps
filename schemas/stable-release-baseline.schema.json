@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/stable-release-baseline.schema.json",
+  "title": "ModelRiskOps Stable Release Baseline v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "release_version", "compatibility_policy_digest", "public_surface_manifest_digest",
+    "production_release_manifest_digest", "supported_upgrade_path_digest",
+    "security_review_checklist_digest", "responsibility_scope_digest",
+    "reproducible_checksum_manifest_digest", "provenance_attestation_digest",
+    "boundary_evidence", "assembled_at"
+  ],
+  "properties": {
+    "release_version": {"const": "1.0.0"},
+    "compatibility_policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "public_surface_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "production_release_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "supported_upgrade_path_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "security_review_checklist_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "responsibility_scope_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "reproducible_checksum_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "provenance_attestation_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "boundary_evidence": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "prefixItems": [
+        {"$ref": "#/$defs/inventory"},
+        {"$ref": "#/$defs/validation"},
+        {"$ref": "#/$defs/monitoring"},
+        {"$ref": "#/$defs/genai"},
+        {"$ref": "#/$defs/portfolio"},
+        {"$ref": "#/$defs/assurance"},
+        {"$ref": "#/$defs/tenant"},
+        {"$ref": "#/$defs/production"}
+      ],
+      "items": false
+    },
+    "assembled_at": {"type": "integer", "minimum": 1}
+  },
+  "$defs": {
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boundary", "artifact_digest", "evidence_description_digest"],
+      "properties": {
+        "boundary": {"type": "string"},
+        "artifact_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "evidence_description_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "inventory": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "inventory_risk"}}}]},
+    "validation": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "validation_approval"}}}]},
+    "monitoring": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "monitoring_change"}}}]},
+    "genai": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "genai"}}}]},
+    "portfolio": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "portfolio_third_party"}}}]},
+    "assurance": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "assurance"}}}]},
+    "tenant": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "tenant_crypto"}}}]},
+    "production": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"boundary": {"const": "production_reference"}}}]}
+  }
+}
