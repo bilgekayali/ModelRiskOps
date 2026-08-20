@@ -181,6 +181,38 @@ class RollbackPlan:
 
 
 @dataclass(frozen=True, slots=True)
+class UpgradePlan:
+    institution_id: str
+    tenant_id: str
+    release_id: str
+    release_version: str
+    source_release_digest: str
+    preflight_evidence_digest: str
+    migration_evidence_digest: str
+    post_upgrade_validation_digest: str
+    rollback_plan_digest: str
+    backup_required: bool
+    declared_at: int
+
+    def __post_init__(self) -> None:
+        for name in ("institution_id", "tenant_id", "release_id"):
+            object.__setattr__(self, name, _text(name, getattr(self, name)))
+        object.__setattr__(self, "release_version", _semver("release_version", self.release_version))
+        for name in (
+            "source_release_digest", "preflight_evidence_digest", "migration_evidence_digest",
+            "post_upgrade_validation_digest", "rollback_plan_digest",
+        ):
+            _digest(name, getattr(self, name))
+        if self.backup_required is not True:
+            raise GovernanceError("v0.8 production upgrades require a backup")
+        _timestamp("declared_at", self.declared_at)
+
+    @property
+    def evidence_digest(self) -> str:
+        return sha256_digest(self)
+
+
+@dataclass(frozen=True, slots=True)
 class RecoveryCheckpoint:
     institution_id: str
     tenant_id: str
@@ -223,6 +255,7 @@ class DeploymentReleaseManifest:
     egress_policy_digest: str
     worker_profile_digest: str
     rollback_plan_digest: str
+    upgrade_plan_digest: str
     recovery_checkpoint_digest: str
     released_at: int
     deployment_performed: bool = False
@@ -241,7 +274,7 @@ class DeploymentReleaseManifest:
         for name in (
             "wheel_sha256", "sbom_digest", "ci_evidence_digest", "provenance_attestation_digest",
             "tenant_isolation_profile_digest", "runtime_identity_profile_digest", "egress_policy_digest",
-            "worker_profile_digest", "rollback_plan_digest", "recovery_checkpoint_digest",
+            "worker_profile_digest", "rollback_plan_digest", "upgrade_plan_digest", "recovery_checkpoint_digest",
         ):
             _digest(name, getattr(self, name))
         _timestamp("released_at", self.released_at)
@@ -288,6 +321,7 @@ class ProductionDeploymentRegistry:
         self._egress: dict[tuple[str, str, str, int], HttpsEgressPolicy] = {}
         self._workers: dict[tuple[str, str, str, int], IsolatedWorkerProfile] = {}
         self._rollbacks: dict[tuple[str, str, str, str], RollbackPlan] = {}
+        self._upgrades: dict[tuple[str, str, str, str], UpgradePlan] = {}
         self._checkpoints: dict[tuple[str, str, str], RecoveryCheckpoint] = {}
         self._releases: dict[tuple[str, str, int], DeploymentReleaseManifest] = {}
 
@@ -297,22 +331,34 @@ class ProductionDeploymentRegistry:
         if version != expected:
             raise GovernanceError(f"{label} versions must be contiguous; expected version {expected}")
 
+    def _egress_by_digest(self, institution_id: str, tenant_id: str, digest: str) -> HttpsEgressPolicy:
+        for item in self._egress.values():
+            if item.institution_id == institution_id and item.tenant_id == tenant_id and item.evidence_digest == digest:
+                return item
+        raise GovernanceError("unknown tenant egress policy digest")
+
+    def _worker_by_digest(self, institution_id: str, tenant_id: str, digest: str) -> IsolatedWorkerProfile:
+        for item in self._workers.values():
+            if item.institution_id == institution_id and item.tenant_id == tenant_id and item.evidence_digest == digest:
+                return item
+        raise GovernanceError("unknown tenant worker profile digest")
+
     def identity_history(self, institution_id: str, tenant_id: str) -> tuple[RuntimeIdentityProfile, ...]:
         return tuple(sorted((item for (scope, tenant, _), item in self._identities.items() if scope == institution_id and tenant == tenant_id), key=lambda item: item.profile_version))
 
     def register_identity(self, profile: RuntimeIdentityProfile) -> str:
-        isolation = self.tenant_isolation_registry.profile_by_digest(profile.institution_id, profile.tenant_id, profile.tenant_isolation_profile_digest)
-        self.tenant_isolation_registry.assert_profile_current(isolation)
-        if isolation.environment is not profile.environment:
-            raise GovernanceError("runtime identity environment must match exact tenant isolation profile")
-        if isolation.registered_at > profile.registered_at:
-            raise GovernanceError("runtime identity cannot bind future tenant isolation evidence")
         identity = (profile.institution_id, profile.tenant_id, profile.profile_version)
         existing = self._identities.get(identity)
         if existing is not None:
             if existing.evidence_digest != profile.evidence_digest:
                 raise GovernanceError("runtime identity profile version already exists with different content")
             return existing.evidence_digest
+        isolation = self.tenant_isolation_registry.profile_by_digest(profile.institution_id, profile.tenant_id, profile.tenant_isolation_profile_digest)
+        self.tenant_isolation_registry.assert_profile_current(isolation)
+        if isolation.environment is not profile.environment:
+            raise GovernanceError("runtime identity environment must match exact tenant isolation profile")
+        if isolation.registered_at > profile.registered_at:
+            raise GovernanceError("runtime identity cannot bind future tenant isolation evidence")
         history = self.identity_history(profile.institution_id, profile.tenant_id)
         self._contiguous(history, profile.profile_version, label="runtime identity profile", attr="profile_version")
         if history and profile.registered_at < history[-1].registered_at:
@@ -363,21 +409,19 @@ class ProductionDeploymentRegistry:
         return tuple(sorted((item for (scope, tenant, candidate, _), item in self._workers.items() if scope == institution_id and tenant == tenant_id and candidate == worker_id), key=lambda item: item.profile_version))
 
     def register_worker(self, profile: IsolatedWorkerProfile) -> str:
-        identity_profile = self.current_identity(profile.institution_id, profile.tenant_id)
-        if identity_profile.evidence_digest != profile.runtime_identity_profile_digest:
-            raise GovernanceError("worker must bind the exact current runtime identity profile")
-        egress = next((item for item in self._egress.values() if item.institution_id == profile.institution_id and item.tenant_id == profile.tenant_id and item.evidence_digest == profile.egress_policy_digest), None)
-        if egress is None:
-            raise GovernanceError("worker references unknown egress policy")
-        self.assert_egress_current(egress)
-        if identity_profile.registered_at > profile.registered_at or egress.registered_at > profile.registered_at:
-            raise GovernanceError("worker cannot bind future runtime or egress evidence")
         identity = (profile.institution_id, profile.tenant_id, profile.worker_id, profile.profile_version)
         existing = self._workers.get(identity)
         if existing is not None:
             if existing.evidence_digest != profile.evidence_digest:
                 raise GovernanceError("worker profile version already exists with different content")
             return existing.evidence_digest
+        identity_profile = self.current_identity(profile.institution_id, profile.tenant_id)
+        if identity_profile.evidence_digest != profile.runtime_identity_profile_digest:
+            raise GovernanceError("worker must bind the exact current runtime identity profile")
+        egress = self._egress_by_digest(profile.institution_id, profile.tenant_id, profile.egress_policy_digest)
+        self.assert_egress_current(egress)
+        if identity_profile.registered_at > profile.registered_at or egress.registered_at > profile.registered_at:
+            raise GovernanceError("worker cannot bind future runtime or egress evidence")
         history = self.worker_history(profile.institution_id, profile.tenant_id, profile.worker_id)
         self._contiguous(history, profile.profile_version, label="worker profile", attr="profile_version")
         if history and profile.registered_at < history[-1].registered_at:
@@ -397,9 +441,7 @@ class ProductionDeploymentRegistry:
         identity = self.current_identity(profile.institution_id, profile.tenant_id)
         if identity.evidence_digest != profile.runtime_identity_profile_digest:
             raise GovernanceError("worker runtime identity binding is stale")
-        egress = next((item for item in self._egress.values() if item.evidence_digest == profile.egress_policy_digest and item.institution_id == profile.institution_id and item.tenant_id == profile.tenant_id), None)
-        if egress is None:
-            raise GovernanceError("worker references unknown egress policy")
+        egress = self._egress_by_digest(profile.institution_id, profile.tenant_id, profile.egress_policy_digest)
         self.assert_egress_current(egress)
         self.assert_identity_current(identity)
 
@@ -411,53 +453,76 @@ class ProductionDeploymentRegistry:
         self._rollbacks.setdefault(identity, plan)
         return plan.evidence_digest
 
+    def register_upgrade(self, plan: UpgradePlan) -> str:
+        identity = (plan.institution_id, plan.tenant_id, plan.release_id, plan.release_version)
+        existing = self._upgrades.get(identity)
+        if existing is not None:
+            if existing.evidence_digest != plan.evidence_digest:
+                raise GovernanceError("upgrade plan already exists with different content")
+            return existing.evidence_digest
+        rollback = self._rollbacks.get(identity)
+        if rollback is None or rollback.evidence_digest != plan.rollback_plan_digest:
+            raise GovernanceError("upgrade plan requires the exact registered rollback plan")
+        if rollback.declared_at > plan.declared_at:
+            raise GovernanceError("upgrade plan cannot bind future rollback evidence")
+        self._upgrades[identity] = plan
+        return plan.evidence_digest
+
     def register_checkpoint(self, checkpoint: RecoveryCheckpoint) -> str:
+        identity = (checkpoint.institution_id, checkpoint.tenant_id, checkpoint.checkpoint_id)
+        existing = self._checkpoints.get(identity)
+        if existing is not None:
+            if existing.evidence_digest != checkpoint.evidence_digest:
+                raise GovernanceError("recovery checkpoint already exists with different content")
+            return existing.evidence_digest
         current_snapshot = self.tenant_isolation_registry.snapshot_digest(checkpoint.institution_id, checkpoint.tenant_id)
         if current_snapshot != checkpoint.tenant_isolation_snapshot_digest:
             raise GovernanceError("recovery checkpoint tenant isolation snapshot is stale")
-        identity = (checkpoint.institution_id, checkpoint.tenant_id, checkpoint.checkpoint_id)
-        existing = self._checkpoints.get(identity)
-        if existing is not None and existing.evidence_digest != checkpoint.evidence_digest:
-            raise GovernanceError("recovery checkpoint already exists with different content")
-        self._checkpoints.setdefault(identity, checkpoint)
+        self._checkpoints[identity] = checkpoint
         return checkpoint.evidence_digest
 
     def release_history(self, institution_id: str, tenant_id: str) -> tuple[DeploymentReleaseManifest, ...]:
         return tuple(sorted((item for (scope, tenant, _), item in self._releases.items() if scope == institution_id and tenant == tenant_id), key=lambda item: item.release_sequence))
 
     def register_release(self, manifest: DeploymentReleaseManifest) -> str:
-        identity_profile = self.current_identity(manifest.institution_id, manifest.tenant_id)
-        if identity_profile.evidence_digest != manifest.runtime_identity_profile_digest:
-            raise GovernanceError("release runtime identity profile is stale")
-        isolation = self.tenant_isolation_registry.profile_by_digest(manifest.institution_id, manifest.tenant_id, manifest.tenant_isolation_profile_digest)
-        self.tenant_isolation_registry.assert_profile_current(isolation)
-        if identity_profile.tenant_isolation_profile_digest != isolation.evidence_digest:
-            raise GovernanceError("release identity does not bind exact tenant isolation profile")
-        egress = next((item for item in self._egress.values() if item.institution_id == manifest.institution_id and item.tenant_id == manifest.tenant_id and item.evidence_digest == manifest.egress_policy_digest), None)
-        if egress is None:
-            raise GovernanceError("release references unknown egress policy")
-        self.assert_egress_current(egress)
-        worker = next((item for item in self._workers.values() if item.institution_id == manifest.institution_id and item.tenant_id == manifest.tenant_id and item.evidence_digest == manifest.worker_profile_digest), None)
-        if worker is None:
-            raise GovernanceError("release references unknown worker profile")
-        self.assert_worker_current(worker)
-        rollback = self._rollbacks.get((manifest.institution_id, manifest.tenant_id, manifest.release_id, manifest.release_version))
-        if rollback is None or rollback.evidence_digest != manifest.rollback_plan_digest:
-            raise GovernanceError("release requires the exact registered rollback plan")
-        checkpoint = next((item for item in self._checkpoints.values() if item.institution_id == manifest.institution_id and item.tenant_id == manifest.tenant_id and item.evidence_digest == manifest.recovery_checkpoint_digest), None)
-        if checkpoint is None:
-            raise GovernanceError("release requires the exact registered recovery checkpoint")
-        if checkpoint.release_id != manifest.release_id or checkpoint.release_version != manifest.release_version:
-            raise GovernanceError("recovery checkpoint must target the exact release identity")
-        for evidence_time in (identity_profile.registered_at, egress.registered_at, worker.registered_at, rollback.declared_at, checkpoint.captured_at):
-            if evidence_time > manifest.released_at:
-                raise GovernanceError("production release cannot bind future readiness evidence")
         identity = (manifest.institution_id, manifest.tenant_id, manifest.release_sequence)
         existing = self._releases.get(identity)
         if existing is not None:
             if existing.evidence_digest != manifest.evidence_digest:
                 raise GovernanceError("release sequence already exists with different content")
             return existing.evidence_digest
+        identity_profile = self.current_identity(manifest.institution_id, manifest.tenant_id)
+        if identity_profile.evidence_digest != manifest.runtime_identity_profile_digest:
+            raise GovernanceError("release runtime identity profile is stale")
+        isolation = self.tenant_isolation_registry.profile_by_digest(manifest.institution_id, manifest.tenant_id, manifest.tenant_isolation_profile_digest)
+        self.tenant_isolation_registry.assert_profile_current(isolation)
+        if isolation.environment is not TenantEnvironment.PRODUCTION:
+            raise GovernanceError("v0.8 production release requires a production tenant isolation profile")
+        if identity_profile.environment is not TenantEnvironment.PRODUCTION:
+            raise GovernanceError("v0.8 production release requires a production runtime identity")
+        if identity_profile.tenant_isolation_profile_digest != isolation.evidence_digest:
+            raise GovernanceError("release identity does not bind exact tenant isolation profile")
+        egress = self._egress_by_digest(manifest.institution_id, manifest.tenant_id, manifest.egress_policy_digest)
+        self.assert_egress_current(egress)
+        worker = self._worker_by_digest(manifest.institution_id, manifest.tenant_id, manifest.worker_profile_digest)
+        self.assert_worker_current(worker)
+        artifact_identity = (manifest.institution_id, manifest.tenant_id, manifest.release_id, manifest.release_version)
+        rollback = self._rollbacks.get(artifact_identity)
+        if rollback is None or rollback.evidence_digest != manifest.rollback_plan_digest:
+            raise GovernanceError("release requires the exact registered rollback plan")
+        upgrade = self._upgrades.get(artifact_identity)
+        if upgrade is None or upgrade.evidence_digest != manifest.upgrade_plan_digest:
+            raise GovernanceError("release requires the exact registered upgrade plan")
+        if upgrade.rollback_plan_digest != rollback.evidence_digest:
+            raise GovernanceError("release upgrade plan does not bind the exact rollback plan")
+        checkpoint = next((item for item in self._checkpoints.values() if item.institution_id == manifest.institution_id and item.tenant_id == manifest.tenant_id and item.evidence_digest == manifest.recovery_checkpoint_digest), None)
+        if checkpoint is None:
+            raise GovernanceError("release requires the exact registered recovery checkpoint")
+        if checkpoint.release_id != manifest.release_id or checkpoint.release_version != manifest.release_version:
+            raise GovernanceError("recovery checkpoint must target the exact release identity")
+        for evidence_time in (identity_profile.registered_at, egress.registered_at, worker.registered_at, rollback.declared_at, upgrade.declared_at, checkpoint.captured_at):
+            if evidence_time > manifest.released_at:
+                raise GovernanceError("production release cannot bind future readiness evidence")
         history = self.release_history(manifest.institution_id, manifest.tenant_id)
         expected = 1 if not history else history[-1].release_sequence + 1
         if manifest.release_sequence != expected:
@@ -471,13 +536,13 @@ class ProductionDeploymentRegistry:
         history = self.release_history(manifest.institution_id, manifest.tenant_id)
         if not history or history[-1].evidence_digest != manifest.evidence_digest:
             raise GovernanceError("production release manifest is stale")
-        self.register_release(manifest)
-        # Re-run all mutable dependency currentness checks even for exact historical retry.
         identity = self.current_identity(manifest.institution_id, manifest.tenant_id)
+        if identity.evidence_digest != manifest.runtime_identity_profile_digest:
+            raise GovernanceError("release runtime identity profile is stale")
         self.assert_identity_current(identity)
-        egress = next(item for item in self._egress.values() if item.evidence_digest == manifest.egress_policy_digest)
+        egress = self._egress_by_digest(manifest.institution_id, manifest.tenant_id, manifest.egress_policy_digest)
         self.assert_egress_current(egress)
-        worker = next(item for item in self._workers.values() if item.evidence_digest == manifest.worker_profile_digest)
+        worker = self._worker_by_digest(manifest.institution_id, manifest.tenant_id, manifest.worker_profile_digest)
         self.assert_worker_current(worker)
         isolation = self.tenant_isolation_registry.profile_by_digest(manifest.institution_id, manifest.tenant_id, manifest.tenant_isolation_profile_digest)
         self.tenant_isolation_registry.assert_profile_current(isolation)
