@@ -524,6 +524,10 @@ class ProductionDeploymentRegistry:
             if evidence_time > manifest.released_at:
                 raise GovernanceError("production release cannot bind future readiness evidence")
         history = self.release_history(manifest.institution_id, manifest.tenant_id)
+        if any(item.release_id == manifest.release_id for item in history):
+            raise GovernanceError("production release_id must not be reused")
+        if any(item.release_version == manifest.release_version for item in history):
+            raise GovernanceError("production release_version must not be reused")
         expected = 1 if not history else history[-1].release_sequence + 1
         if manifest.release_sequence != expected:
             raise GovernanceError(f"production release sequence must be contiguous; expected {expected}")
