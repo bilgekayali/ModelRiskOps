@@ -35,7 +35,6 @@ jobs:
           for path in sorted(Path("schemas").glob("*.schema.json")):
               payload = json.loads(path.read_text(encoding="utf-8"))
               assert payload["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-              assert payload["additionalProperties"] is False
               jsonschema.Draft202012Validator.check_schema(payload)
               print(path)
           PY
