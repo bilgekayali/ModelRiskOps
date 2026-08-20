@@ -120,11 +120,18 @@ jobs:
               'crypto key versions must be contiguous',
               'rotated key versions must use distinct key_id values',
               'new cryptographic operations require the current active key',
+              'no active tenant crypto key exists for requested purpose/time',
+              'disabled configuration signing key cannot activate changes',
               'configuration change cannot become current before effective_at',
               'configuration change does not extend the exact tenant change chain',
               'tenant isolation profile is stale',
+              'encrypted governance evidence cannot be from the future',
+              'evidence encryption key was not active at encryption time',
+              'encrypted evidence AAD digest mismatch',
               'encrypted governance evidence authentication failed',
               'encrypted governance evidence key is disabled',
+              '"plaintext_digest": plaintext_digest',
+              '"encrypted_at": encrypted_at',
           )
           for marker in required_markers:
               if marker not in source:
