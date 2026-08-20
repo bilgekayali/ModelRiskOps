@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/independent-security-review-checklist.schema.json",
+  "title": "ModelRiskOps Independent Security Review Checklist v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["release_version", "reviewer_id", "reviewer_independence_confirmed", "items", "reviewed_at"],
+  "properties": {
+    "release_version": {"const": "1.0.0"},
+    "reviewer_id": {"type": "string", "minLength": 1},
+    "reviewer_independence_confirmed": {"const": true},
+    "items": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "prefixItems": [
+        {"$ref": "#/$defs/approval"},
+        {"$ref": "#/$defs/assurance"},
+        {"$ref": "#/$defs/genai"},
+        {"$ref": "#/$defs/validation"},
+        {"$ref": "#/$defs/inventory"},
+        {"$ref": "#/$defs/monitoring"},
+        {"$ref": "#/$defs/portfolio"},
+        {"$ref": "#/$defs/production"},
+        {"$ref": "#/$defs/release"},
+        {"$ref": "#/$defs/risk"},
+        {"$ref": "#/$defs/signing"},
+        {"$ref": "#/$defs/tenant"}
+      ],
+      "items": false
+    },
+    "reviewed_at": {"type": "integer", "minimum": 1}
+  },
+  "$defs": {
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item_id", "status", "evidence_digest", "reviewer_rationale_digest"],
+      "properties": {
+        "item_id": {"type": "string"},
+        "status": {"enum": ["closed", "risk_accepted"]},
+        "evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "reviewer_rationale_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "risk_acceptance_human_id": {"type": "string", "minLength": 1},
+        "risk_acceptance_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "risk_accepted"}}, "required": ["status"]},
+          "then": {"required": ["risk_acceptance_human_id", "risk_acceptance_digest"]},
+          "else": {
+            "not": {
+              "anyOf": [
+                {"required": ["risk_acceptance_human_id"]},
+                {"required": ["risk_acceptance_digest"]}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "approval": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "approval-exception-and-revalidation"}}}]},
+    "assurance": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "assurance-non-claims"}}}]},
+    "genai": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "genai-overlay-and-human-oversight"}}}]},
+    "validation": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "independent-validation-and-findings"}}}]},
+    "inventory": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "inventory-version-and-provenance"}}}]},
+    "monitoring": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "monitoring-and-change-control"}}}]},
+    "portfolio": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "portfolio-and-third-party-risk"}}}]},
+    "production": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "production-reference-egress-and-worker"}}}]},
+    "release": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "release-provenance-and-upgrade"}}}]},
+    "risk": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "risk-policy-determinism"}}}]},
+    "signing": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "signing-and-key-revocation"}}}]},
+    "tenant": {"allOf": [{"$ref": "#/$defs/base"}, {"properties": {"item_id": {"const": "tenant-isolation-and-crypto-lifecycle"}}}]}
+  }
+}
