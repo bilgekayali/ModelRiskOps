@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/third-party-exit-plan.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id","model_id","version_id","dependency_id","dependency_digest","plan_version",
+    "owner_id","transition_strategy_digest","portability_evidence_digest","validation_plan_digest",
+    "max_exit_seconds","created_at","tested_at","test_evidence_digest"
+  ],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "model_id": {"type":"string","minLength":1},
+    "version_id": {"type":"string","minLength":1},
+    "dependency_id": {"type":"string","minLength":1},
+    "dependency_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "plan_version": {"type":"integer","minimum":1},
+    "owner_id": {"type":"string","minLength":1},
+    "transition_strategy_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "portability_evidence_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "validation_plan_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "max_exit_seconds": {"type":"integer","minimum":1,"maximum":31536000},
+    "created_at": {"type":"integer","minimum":0},
+    "tested_at": {"type":["integer","null"],"minimum":0},
+    "test_evidence_digest": {
+      "anyOf": [
+        {"type":"string","pattern":"^[0-9a-f]{64}$"},
+        {"type":"null"}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties":{"tested_at":{"type":"null"}}},
+      "then": {"properties":{"test_evidence_digest":{"type":"null"}}},
+      "else": {"properties":{"test_evidence_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"}}}
+    },
+    {
+      "if": {"properties":{"test_evidence_digest":{"type":"null"}}},
+      "then": {"properties":{"tested_at":{"type":"null"}}},
+      "else": {"properties":{"tested_at":{"type":"integer","minimum":0}}}
+    }
+  ]
+}

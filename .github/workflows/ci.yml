@@ -16,8 +16,8 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Upgrade packaging tools
@@ -53,14 +53,22 @@ jobs:
               GenAIMetricKind,
               build_genai_governance_dossier,
               create_genai_model_change_proposal,
+              PortfolioRiskRegistry,
+              DependencyMateriality,
+              PortfolioAssessmentState,
+              default_portfolio_risk_policy,
           )
-          assert modelriskops.__version__ == "0.4.0"
+          assert modelriskops.__version__ == "0.5.0"
           assert SigningKeyRegistry is not None
           assert ChangeMateriality.MATERIAL.value == "material"
           assert FoundationModelDependency is not None
           assert GenAIMetricKind.FACTUALITY.value == "factuality"
           assert build_genai_governance_dossier is not None
           assert create_genai_model_change_proposal is not None
+          assert PortfolioRiskRegistry is not None
+          assert DependencyMateriality.CRITICAL.value == "critical"
+          assert PortfolioAssessmentState.INCOMPLETE.value == "incomplete"
+          assert default_portfolio_risk_policy("bank-demo").single_provider_limit_bps == 4000
           print(modelriskops.__version__)
           PY
           /tmp/modelriskops-wheel/bin/modelriskops --help >/dev/null

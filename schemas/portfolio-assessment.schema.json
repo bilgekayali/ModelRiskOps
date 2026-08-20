@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/portfolio-assessment.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id","portfolio_id","snapshot_digest","policy_digest","assessed_at","state",
+    "provider_exposures","critical_provider_ids","third_party_exposure_bps","high_critical_exposure_bps","findings"
+  ],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "portfolio_id": {"type":"string","minLength":1},
+    "snapshot_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "policy_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "assessed_at": {"type":"integer","minimum":0},
+    "state": {"enum":["healthy","degraded","breached","incomplete"]},
+    "provider_exposures": {
+      "type":"array",
+      "items": {
+        "type":"object",
+        "additionalProperties": false,
+        "required": ["provider_id","provider_profile_digest","exposure_bps","model_count","dependency_count"],
+        "properties": {
+          "provider_id": {"type":"string","minLength":1},
+          "provider_profile_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+          "exposure_bps": {"type":"integer","minimum":1,"maximum":10000},
+          "model_count": {"type":"integer","minimum":1},
+          "dependency_count": {"type":"integer","minimum":1}
+        }
+      }
+    },
+    "critical_provider_ids": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "third_party_exposure_bps": {"type":"integer","minimum":0,"maximum":10000},
+    "high_critical_exposure_bps": {"type":"integer","minimum":0,"maximum":10000},
+    "findings": {"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}}
+  }
+}
