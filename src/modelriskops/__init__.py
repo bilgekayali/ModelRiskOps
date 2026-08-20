@@ -146,6 +146,22 @@ from .portfolio import (
     ThirdPartyProviderProfile,
     default_portfolio_risk_policy,
 )
+from .assurance import (
+    Applicability,
+    AssuranceApplicabilityAssertion,
+    AssuranceCrosswalkEntry,
+    AssuranceEvidencePackage,
+    AssuranceEvidenceReference,
+    AssuranceEvidenceRegistry,
+    AssuranceFramework,
+    AssuranceMappingProfile,
+    AssuranceScope,
+    AssuranceSubjectKind,
+    EUAIActRole,
+    EvidenceCoverage,
+    FrameworkCoverageSummary,
+    SUPPORTED_FRAMEWORK_VERSIONS,
+)
 from .dossier import (
     DossierEntry,
     DossierGovernanceState,
@@ -284,6 +300,20 @@ __all__ = [
     "ThirdPartyModelDependency",
     "ThirdPartyProviderProfile",
     "default_portfolio_risk_policy",
+    "Applicability",
+    "AssuranceApplicabilityAssertion",
+    "AssuranceCrosswalkEntry",
+    "AssuranceEvidencePackage",
+    "AssuranceEvidenceReference",
+    "AssuranceEvidenceRegistry",
+    "AssuranceFramework",
+    "AssuranceMappingProfile",
+    "AssuranceScope",
+    "AssuranceSubjectKind",
+    "EUAIActRole",
+    "EvidenceCoverage",
+    "FrameworkCoverageSummary",
+    "SUPPORTED_FRAMEWORK_VERSIONS",
     "DossierEntry",
     "DossierGovernanceState",
     "GovernanceDossier",
@@ -294,4 +324,4 @@ __all__ = [
     "build_genai_governance_dossier",
 ]
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
