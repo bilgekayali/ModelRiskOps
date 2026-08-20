@@ -119,6 +119,20 @@ def request(sequence: int, previous: str | None, proposed: str, at: int) -> Conf
     )
 
 
+def rotated_signing_key(fx: Fixture, *, key_version: int = 2, not_after: int = 1000) -> InstitutionCryptoKeyReference:
+    private_key = Ed25519PrivateKey.generate()
+    public_key = private_key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    return replace(
+        fx.signing_key,
+        key_version=key_version,
+        key_id=f"kms-signing-v{key_version}",
+        public_key_base64url=b64url(public_key),
+        registered_at=200,
+        not_before=200,
+        not_after=not_after,
+    )
+
+
 def test_rls_renderer_is_tenant_and_institution_scoped_and_forced() -> None:
     fx = Fixture()
     ddl = render_postgres_rls_sql(fx.policy)
@@ -148,14 +162,9 @@ def test_symmetric_key_material_cannot_be_embedded() -> None:
         )
 
 
-def test_key_rotation_never_rolls_back_to_older_version() -> None:
+def test_key_rotation_never_rolls_back_to_older_version_after_retirement() -> None:
     fx = Fixture()
-    private2 = Ed25519PrivateKey.generate()
-    pub2 = private2.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
-    key2 = replace(
-        fx.signing_key, key_version=2, key_id="kms-signing-v2", public_key_base64url=b64url(pub2),
-        registered_at=200, not_before=200,
-    )
+    key2 = rotated_signing_key(fx)
     fx.keys.register(key2)
     assert fx.keys.current_key("bank-demo", "tenant-a", CryptoKeyPurpose.CONFIG_SIGNING, now=210) == key2
     fx.keys.transition(CryptoKeyLifecycleState(
@@ -163,6 +172,17 @@ def test_key_rotation_never_rolls_back_to_older_version() -> None:
         key_reference_digest=key2.evidence_digest, state_version=2,
         status=CryptoKeyStatus.RETIRED, effective_at=220,
     ))
+    with pytest.raises(GovernanceError, match="no active tenant crypto key"):
+        fx.keys.current_key("bank-demo", "tenant-a", CryptoKeyPurpose.CONFIG_SIGNING, now=230)
+    with pytest.raises(GovernanceError):
+        fx.keys.assert_new_operation_allowed(fx.signing_key, artifact_time=230, now=230)
+
+
+def test_key_expiry_never_rolls_back_to_older_version() -> None:
+    fx = Fixture()
+    key2 = rotated_signing_key(fx, not_after=220)
+    fx.keys.register(key2)
+    assert fx.keys.current_key("bank-demo", "tenant-a", CryptoKeyPurpose.CONFIG_SIGNING, now=210) == key2
     with pytest.raises(GovernanceError, match="no active tenant crypto key"):
         fx.keys.current_key("bank-demo", "tenant-a", CryptoKeyPurpose.CONFIG_SIGNING, now=230)
     with pytest.raises(GovernanceError):
@@ -208,7 +228,24 @@ def test_future_effective_configuration_does_not_become_current_early() -> None:
         ConfigurationChangeRegistry().append(signed, key_registry=fx.keys, now=140)
 
 
-def test_encrypted_evidence_binds_tenant_profile_key_and_subject() -> None:
+def test_disabled_signing_key_cannot_activate_previously_signed_change() -> None:
+    fx = Fixture()
+    req = replace(request(1, None, D2, 120), effective_at=150)
+    signed = sign_configuration_change(
+        req, previous_change_digest=None, key_reference=fx.signing_key,
+        key_registry=fx.keys, signer=fx.signer, signed_at=120, now=120,
+    )
+    fx.keys.transition(CryptoKeyLifecycleState(
+        institution_id="bank-demo", tenant_id="tenant-a", purpose=CryptoKeyPurpose.CONFIG_SIGNING,
+        key_reference_digest=fx.signing_key.evidence_digest, state_version=2,
+        status=CryptoKeyStatus.DISABLED, effective_at=140,
+    ))
+    assert verify_signed_configuration_change(signed, key_registry=fx.keys, now=150) == req
+    with pytest.raises(GovernanceError, match="disabled configuration signing key"):
+        ConfigurationChangeRegistry().append(signed, key_registry=fx.keys, now=150)
+
+
+def test_encrypted_evidence_binds_tenant_profile_key_subject_and_time() -> None:
     fx = Fixture()
     plaintext = b"governance evidence payload"
     envelope = encrypt_governance_evidence(
@@ -224,6 +261,16 @@ def test_encrypted_evidence_binds_tenant_profile_key_and_subject() -> None:
         decrypt_governance_evidence(
             replace(envelope, subject_artifact_digest=D3),
             isolation_registry=fx.isolation, key_registry=fx.keys, decryptor=fx.cipher, now=140,
+        )
+    with pytest.raises(GovernanceError, match="AAD digest mismatch"):
+        decrypt_governance_evidence(
+            replace(envelope, encrypted_at=141),
+            isolation_registry=fx.isolation, key_registry=fx.keys, decryptor=fx.cipher, now=141,
+        )
+    with pytest.raises(GovernanceError, match="cannot be from the future"):
+        decrypt_governance_evidence(
+            envelope,
+            isolation_registry=fx.isolation, key_registry=fx.keys, decryptor=fx.cipher, now=139,
         )
 
 
