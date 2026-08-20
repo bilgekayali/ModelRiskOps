@@ -140,6 +140,8 @@ jobs:
               'release requires the exact registered rollback plan',
               'release requires the exact registered upgrade plan',
               'production release cannot bind future readiness evidence',
+              'production release_id must not be reused',
+              'production release_version must not be reused',
               'production release manifest is stale',
               'ModelRiskOps release manifests are reference evidence and cannot claim deployment or model invocation',
           )
