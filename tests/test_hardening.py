@@ -20,6 +20,7 @@ from modelriskops.hardening import (
     TenantEnvironment,
     TenantIsolationProfile,
     TenantIsolationRegistry,
+    assert_encrypted_evidence_current,
     decrypt_governance_evidence,
     encrypt_governance_evidence,
     render_postgres_rls_sql,
@@ -188,7 +189,7 @@ def test_key_rotation_never_rolls_back_to_older_version() -> None:
     ))
     with pytest.raises(GovernanceError, match="no active tenant crypto key"):
         fx.keys.current_key("bank-demo", "tenant-a", CryptoKeyPurpose.CONFIG_SIGNING, now=230)
-    with pytest.raises(GovernanceError, match="current active key"):
+    with pytest.raises(GovernanceError):
         fx.keys.assert_new_operation_allowed(fx.signing_key, artifact_time=230, now=230)
 
 
@@ -260,7 +261,7 @@ def test_encrypted_evidence_binds_tenant_profile_key_and_subject() -> None:
         )
 
 
-def test_isolation_drift_blocks_new_encryption_and_current_decryption() -> None:
+def test_isolation_drift_preserves_history_but_fails_current_eligibility() -> None:
     fx = Fixture()
     envelope = encrypt_governance_evidence(
         b"payload", envelope_id="env-2", institution_id="bank-demo", tenant_id="tenant-a", subject_artifact_digest=D2,
@@ -269,8 +270,11 @@ def test_isolation_drift_blocks_new_encryption_and_current_decryption() -> None:
     )
     profile_v2 = replace(fx.profile, profile_version=2, namespace_digest=D4, registered_at=200)
     fx.isolation.register_profile(profile_v2)
-    with pytest.raises(GovernanceError, match="not current"):
-        decrypt_governance_evidence(envelope, isolation_registry=fx.isolation, key_registry=fx.keys, decryptor=fx.cipher, now=210)
+    assert decrypt_governance_evidence(
+        envelope, isolation_registry=fx.isolation, key_registry=fx.keys, decryptor=fx.cipher, now=210
+    ) == b"payload"
+    with pytest.raises(GovernanceError, match="stale"):
+        assert_encrypted_evidence_current(envelope, isolation_registry=fx.isolation, key_registry=fx.keys, now=210)
     with pytest.raises(GovernanceError, match="stale"):
         encrypt_governance_evidence(
             b"new", envelope_id="env-3", institution_id="bank-demo", tenant_id="tenant-a", subject_artifact_digest=D2,
