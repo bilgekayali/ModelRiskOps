@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/upgrade-plan.schema.json",
+  "title":"UpgradePlan",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["institution_id","tenant_id","release_id","release_version","source_release_digest","preflight_evidence_digest","migration_evidence_digest","post_upgrade_validation_digest","rollback_plan_digest","backup_required","declared_at"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},
+    "tenant_id":{"type":"string","minLength":1},
+    "release_id":{"type":"string","minLength":1},
+    "release_version":{"type":"string","pattern":"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"},
+    "source_release_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "preflight_evidence_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "migration_evidence_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "post_upgrade_validation_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "rollback_plan_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "backup_required":{"const":true},
+    "declared_at":{"type":"integer","minimum":1}
+  }
+}
