@@ -19,6 +19,7 @@ on:
       - "schemas/responsibility-scope.schema.json"
       - "schemas/stable-release-baseline.schema.json"
       - "security-review/**"
+      - "scripts/repository_review_digest.py"
       - "docs/STABLE_RELEASE.md"
       - "docs/COMPATIBILITY.md"
       - "docs/SECURITY_REVIEW.md"
@@ -41,6 +42,7 @@ on:
       - "schemas/responsibility-scope.schema.json"
       - "schemas/stable-release-baseline.schema.json"
       - "security-review/**"
+      - "scripts/repository_review_digest.py"
       - "docs/STABLE_RELEASE.md"
       - "docs/COMPATIBILITY.md"
       - "docs/SECURITY_REVIEW.md"
@@ -114,6 +116,8 @@ jobs:
           assert tuple(sorted(REQUIRED_V1_NON_CLAIMS)) == REQUIRED_V1_NON_CLAIMS
 
           review = json.loads(Path('schemas/independent-security-review-checklist.schema.json').read_text())
+          assert 'reviewed_repository_digest' in review['required']
+          assert review['properties']['reviewed_repository_digest']['pattern'] == '^[0-9a-f]{64}$'
           assert review['properties']['reviewer_independence_confirmed']['const'] is True
           assert review['properties']['items']['minItems'] == 12
           assert review['properties']['items']['maxItems'] == 12
@@ -124,6 +128,15 @@ jobs:
           assert scope['properties']['regulatory_compliance_determined']['const'] is False
           assert scope['properties']['production_fitness_claimed']['const'] is False
           PY
+      - name: Verify deterministic repository review digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          first=$(python scripts/repository_review_digest.py)
+          second=$(python scripts/repository_review_digest.py)
+          test "$first" = "$second"
+          test "${#first}" -eq 64
+          echo "$first" | grep -Eq '^[0-9a-f]{64}$'
       - name: Verify offline fail-closed v1 surface
         shell: bash
         run: |
@@ -149,6 +162,7 @@ jobs:
           source = Path('src/modelriskops/stability.py').read_text(encoding='utf-8')
           required_markers = (
               'v1 supports only the declared 0.8.x source series',
+              'reviewed_repository_digest',
               'reviewer independence must be explicitly confirmed by the reviewer',
               'risk_acceptance_human_id',
               'stable baseline must bind every governance boundary in canonical order',
@@ -175,6 +189,8 @@ jobs:
           source = Path('.github/workflows/release-provenance.yml').read_text(encoding='utf-8')
           required = (
               'security-review/v1.0-review.json',
+              'reviewed_repository_digest',
+              'scripts/repository_review_digest.py',
               'reviewer_independence_confirmed',
               'risk_acceptance_human_id',
               'risk_acceptance_digest',
