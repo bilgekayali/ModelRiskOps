@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/portfolio-risk-policy.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id","policy_id","version","single_provider_warning_bps","single_provider_limit_bps",
+    "high_critical_exposure_limit_bps","require_exit_plan_for_material",
+    "require_tested_exit_for_critical","degrade_low_substitutability"
+  ],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "policy_id": {"type":"string","minLength":1},
+    "version": {"type":"string","minLength":1},
+    "single_provider_warning_bps": {"type":"integer","minimum":1,"maximum":10000},
+    "single_provider_limit_bps": {"type":"integer","minimum":1,"maximum":10000},
+    "high_critical_exposure_limit_bps": {"type":"integer","minimum":1,"maximum":10000},
+    "require_exit_plan_for_material": {"const":true},
+    "require_tested_exit_for_critical": {"const":true},
+    "degrade_low_substitutability": {"const":true}
+  }
+}
