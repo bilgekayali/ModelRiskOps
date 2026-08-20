@@ -26,19 +26,23 @@ Provider evidence is represented evidence only. A digest does not prove that a p
 
 ## Third-party model dependencies
 
-`ThirdPartyModelDependency` binds one exact current `ModelVersion` to one exact current provider profile and service identity. The dependency carries explicit institution-owned judgments for:
+`ThirdPartyModelDependency` binds one exact current `ModelVersion` to one exact current provider profile and service identity. It also binds the provider's represented model identity/version and an exact `provider_version_evidence_digest`, so a vendor model/version change requires new dependency evidence rather than being hidden behind a stable provider or service name.
+
+The dependency carries explicit institution-owned judgments for:
 
 - materiality: `non_material`, `material`, `critical`;
 - substitutability: `high`, `moderate`, `low`, `none`; and
 - represented provider data-access level: `none`, `non_sensitive`, `personal`, `sensitive`.
 
-Dependencies are append-only/versioned. A provider-profile update does not silently rewrite an existing dependency. The old dependency remains historical evidence but fails current-use validation until a new dependency version binds the new provider profile.
+Dependencies are append-only/versioned. A provider-profile or represented provider-model/version update does not silently rewrite an existing dependency. The old dependency remains historical evidence but fails current-use validation when its current binding has been superseded.
 
 ## Exit and transition evidence
 
 `ThirdPartyExitPlan` binds to one exact dependency digest and carries transition-strategy, portability and validation-plan evidence plus a bounded maximum exit duration.
 
-Material and critical dependencies require a current exit plan under the v0.5 policy contract. Critical dependencies additionally require represented exit-plan test evidence. ModelRiskOps records and verifies those artifacts; it does not execute an exit, portability test or migration.
+Material and critical dependencies require a current exit plan under the v0.5 policy contract. Critical dependencies additionally require represented exit-plan test evidence. An assessment cannot use an exit plan whose `created_at` is later than `assessed_at`, and a critical dependency cannot use test evidence whose `tested_at` is later than `assessed_at`. Future evidence therefore cannot retroactively satisfy an earlier portfolio assessment.
+
+ModelRiskOps records and verifies these artifacts; it does not execute an exit, portability test or migration.
 
 ## Portfolio snapshot
 
@@ -59,13 +63,17 @@ The weights are governance inputs. ModelRiskOps does not infer capital exposure,
 - `healthy` — no represented threshold, currentness or exit-readiness finding;
 - `degraded` — warning-level provider concentration or low/none substitutability for a material/critical dependency;
 - `breached` — an institution-owned provider-concentration or high/critical exposure limit is exceeded;
-- `incomplete` — required evidence is missing or expired, including due-diligence/contract expiry or required exit-plan/test evidence.
+- `incomplete` — required evidence is missing, expired or not yet effective at the represented assessment time.
 
 State precedence is fail-closed:
 
 `incomplete > breached > degraded > healthy`
 
 A provider's portfolio exposure counts a model's exposure weight once for that provider even when the model has multiple services from the same provider. Dependency count is retained separately so duplicate service relationships remain visible without double-counting model exposure.
+
+`critical_provider_ids` explicitly identifies providers supporting at least one dependency classified by the institution as `critical`. This is a derived governance label from represented dependency materiality; it is not a legal or supervisory designation of a critical ICT/provider entity.
+
+The built-in default concentration thresholds are reference/test defaults only. They are not regulatory thresholds and should be replaced by institution-approved policy values for real use.
 
 ## Currentness and historical evidence
 
@@ -105,13 +113,14 @@ Applicability, legal interpretation, supervisory expectations and acceptable con
 ModelRiskOps v0.5 does not itself establish:
 
 - that a third-party provider or model is safe, approved, financially resilient or trustworthy;
+- that a provider classified here as supporting a critical model dependency is legally or regulatorily a "critical" provider;
 - the legal materiality of an outsourcing or third-party arrangement;
 - DORA, EU AI Act, SR 26-2 or other regulatory compliance;
 - contractual sufficiency, enforceability or exit rights;
 - objective provider concentration or economic exposure beyond institution-supplied portfolio weights;
 - successful provider substitution, portability, exit or migration;
 - live provider availability, security posture or operational performance;
-- authenticity of external due-diligence/contract/security/financial evidence merely because its digest is bound; or
+- authenticity of external due-diligence/contract/security/financial/provider-version evidence merely because its digest is bound; or
 - production fitness, certification, supervisory acceptance or legal advice.
 
 The portfolio core remains offline and does not train, execute, call, probe or monitor models or provider services.
