@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/third-party-model-dependency.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "institution_id","model_id","version_id","dependency_id","dependency_version",
+    "model_version_digest","provider_id","provider_profile_digest","service_id",
+    "service_description_digest","materiality","substitutability","data_access_level","registered_at"
+  ],
+  "properties": {
+    "institution_id": {"type":"string","minLength":1},
+    "model_id": {"type":"string","minLength":1},
+    "version_id": {"type":"string","minLength":1},
+    "dependency_id": {"type":"string","minLength":1},
+    "dependency_version": {"type":"integer","minimum":1},
+    "model_version_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "provider_id": {"type":"string","minLength":1},
+    "provider_profile_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "service_id": {"type":"string","minLength":1},
+    "service_description_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "materiality": {"enum":["non_material","material","critical"]},
+    "substitutability": {"enum":["high","moderate","low","none"]},
+    "data_access_level": {"enum":["none","non_sensitive","personal","sensitive"]},
+    "registered_at": {"type":"integer","minimum":0}
+  }
+}
