@@ -1,0 +1,31 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/deployment-release-manifest.schema.json",
+  "title":"DeploymentReleaseManifest",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["institution_id","tenant_id","release_id","release_sequence","release_version","source_commit_sha","package_version","wheel_sha256","sbom_digest","ci_evidence_digest","provenance_attestation_digest","tenant_isolation_profile_digest","runtime_identity_profile_digest","egress_policy_digest","worker_profile_digest","rollback_plan_digest","upgrade_plan_digest","recovery_checkpoint_digest","released_at","deployment_performed","model_invocation_performed"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},
+    "tenant_id":{"type":"string","minLength":1},
+    "release_id":{"type":"string","minLength":1},
+    "release_sequence":{"type":"integer","minimum":1},
+    "release_version":{"type":"string","pattern":"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"},
+    "source_commit_sha":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "package_version":{"type":"string","pattern":"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"},
+    "wheel_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "sbom_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "ci_evidence_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "provenance_attestation_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "tenant_isolation_profile_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "runtime_identity_profile_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "egress_policy_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "worker_profile_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "rollback_plan_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "upgrade_plan_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "recovery_checkpoint_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "released_at":{"type":"integer","minimum":1},
+    "deployment_performed":{"const":false},
+    "model_invocation_performed":{"const":false}
+  }
+}

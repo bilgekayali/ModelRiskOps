@@ -1,0 +1,19 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://modelriskops.dev/schemas/recovery-checkpoint.schema.json",
+  "title":"RecoveryCheckpoint",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["institution_id","tenant_id","checkpoint_id","release_id","release_version","tenant_isolation_snapshot_digest","backup_artifact_digest","recovery_test_evidence_digest","captured_at"],
+  "properties":{
+    "institution_id":{"type":"string","minLength":1},
+    "tenant_id":{"type":"string","minLength":1},
+    "checkpoint_id":{"type":"string","minLength":1},
+    "release_id":{"type":"string","minLength":1},
+    "release_version":{"type":"string","pattern":"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"},
+    "tenant_isolation_snapshot_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "backup_artifact_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "recovery_test_evidence_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "captured_at":{"type":"integer","minimum":1}
+  }
+}
