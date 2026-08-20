@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/assurance-crosswalk-entry.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entry_id","institution_id","scope_digest","framework","framework_version","reference_id","applicability_assertion_digest","coverage","evidence_reference_digests","mapping_rationale","mapped_by_id","mapped_at"],
+  "properties": {
+    "entry_id": {"type":"string","minLength":1},
+    "institution_id": {"type":"string","minLength":1},
+    "scope_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "framework": {"enum":["federal_reserve_sr_26_2","nist_ai_rmf","nist_ai_600_1","iso_iec_42001","eu_ai_act"]},
+    "framework_version": {"enum":["SR 26-2","1.0","600-1","2023","2024/1689@2026-07-27"]},
+    "reference_id": {"type":"string","minLength":1},
+    "applicability_assertion_digest": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "coverage": {"enum":["supported","partial","gap","not_applicable"]},
+    "evidence_reference_digests": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[0-9a-f]{64}$"}},
+    "mapping_rationale": {"type":"string","minLength":1},
+    "mapped_by_id": {"type":"string","minLength":1},
+    "mapped_at": {"type":"integer","minimum":0}
+  }
+}
