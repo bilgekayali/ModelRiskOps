@@ -75,12 +75,15 @@ jobs:
           assert dependency['properties']['materiality']['enum'] == ['non_material', 'material', 'critical']
           assert dependency['properties']['substitutability']['enum'] == ['high', 'moderate', 'low', 'none']
           assert dependency['properties']['data_access_level']['enum'] == ['none', 'non_sensitive', 'personal', 'sensitive']
+          for field in ('provider_model_id', 'provider_model_version', 'provider_version_evidence_digest'):
+              assert field in dependency['required']
           policy = json.loads(Path('schemas/portfolio-risk-policy.schema.json').read_text())
           assert policy['properties']['require_exit_plan_for_material']['const'] is True
           assert policy['properties']['require_tested_exit_for_critical']['const'] is True
           assert policy['properties']['degrade_low_substitutability']['const'] is True
           assessment = json.loads(Path('schemas/portfolio-assessment.schema.json').read_text())
           assert assessment['properties']['state']['enum'] == ['healthy', 'degraded', 'breached', 'incomplete']
+          assert 'critical_provider_ids' in assessment['required']
           PY
       - name: Verify offline fail-closed portfolio surface
         shell: bash
@@ -110,6 +113,8 @@ jobs:
               'exit-plan versions must be contiguous',
               'portfolio snapshot versions must be contiguous',
               'third-party dependency must bind the current provider profile',
+              'provider_version_evidence_digest',
+              'critical_provider_ids',
               'portfolio snapshot must bind the current inventory snapshot',
               'portfolio exposure weights must sum to exactly 10000 basis points',
               'provider_due_diligence_expired',
