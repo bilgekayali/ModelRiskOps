@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelriskops.dev/schemas/responsibility-scope.schema.json",
+  "title": "ModelRiskOps Responsibility Scope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "release_version", "legal_advice_provided", "regulatory_compliance_determined",
+    "certification_claimed", "supervisory_acceptance_claimed", "production_fitness_claimed",
+    "institution_legal_review_required", "privacy_data_protection_review_required",
+    "model_risk_accountable_owner_required", "production_iam_network_review_required",
+    "records_retention_review_required", "non_claims", "declared_at"
+  ],
+  "properties": {
+    "release_version": {"const": "1.0.0"},
+    "legal_advice_provided": {"const": false},
+    "regulatory_compliance_determined": {"const": false},
+    "certification_claimed": {"const": false},
+    "supervisory_acceptance_claimed": {"const": false},
+    "production_fitness_claimed": {"const": false},
+    "institution_legal_review_required": {"const": true},
+    "privacy_data_protection_review_required": {"const": true},
+    "model_risk_accountable_owner_required": {"const": true},
+    "production_iam_network_review_required": {"const": true},
+    "records_retention_review_required": {"const": true},
+    "non_claims": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "prefixItems": [
+        {"const": "not-automated-model-validation"},
+        {"const": "not-certification-or-conformity-assessment"},
+        {"const": "not-deployed-rls-proof"},
+        {"const": "not-hardware-custody-proof"},
+        {"const": "not-legal-advice-or-regulatory-determination"},
+        {"const": "not-live-deployment-or-model-execution"},
+        {"const": "not-model-safety-or-factuality-guarantee"},
+        {"const": "not-production-fitness-guarantee"},
+        {"const": "not-supervisory-acceptance-determination"}
+      ],
+      "items": false
+    },
+    "declared_at": {"type": "integer", "minimum": 1}
+  }
+}
