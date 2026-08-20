@@ -32,8 +32,8 @@ jobs:
   assurance-mappings-boundary:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Install package
@@ -52,9 +52,10 @@ jobs:
           from modelriskops import AssuranceFramework, SUPPORTED_FRAMEWORK_VERSIONS
 
           project = tomllib.load(open('pyproject.toml', 'rb'))
-          version = tuple(int(part) for part in project['project']['version'].split('.'))
+          version_text = project['project']['version']
+          version = tuple(int(part) for part in version_text.split('.'))
           assert version >= (0, 6, 0)
-          assert modelriskops.__version__ == project['project']['version']
+          assert modelriskops.__version__ == version_text
           assert SUPPORTED_FRAMEWORK_VERSIONS[AssuranceFramework.FEDERAL_RESERVE_SR_26_2] == 'SR 26-2'
           assert SUPPORTED_FRAMEWORK_VERSIONS[AssuranceFramework.NIST_AI_RMF] == '1.0'
           assert SUPPORTED_FRAMEWORK_VERSIONS[AssuranceFramework.NIST_AI_600_1] == '600-1'
