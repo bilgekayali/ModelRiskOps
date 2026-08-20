@@ -1,0 +1,188 @@
+name: Stable Release Boundary
+
+on:
+  push:
+    branches:
+      - main
+      - "agent/**"
+    paths:
+      - "src/modelriskops/api.py"
+      - "src/modelriskops/stability.py"
+      - "src/modelriskops/cli.py"
+      - "src/modelriskops/__init__.py"
+      - "tests/test_stability*.py"
+      - "compatibility/**"
+      - "schemas/stable-compatibility-policy.schema.json"
+      - "schemas/public-surface-manifest.schema.json"
+      - "schemas/supported-upgrade-path.schema.json"
+      - "schemas/independent-security-review-checklist.schema.json"
+      - "schemas/responsibility-scope.schema.json"
+      - "schemas/stable-release-baseline.schema.json"
+      - "security-review/**"
+      - "docs/STABLE_RELEASE.md"
+      - "docs/COMPATIBILITY.md"
+      - "docs/SECURITY_REVIEW.md"
+      - "docs/UPGRADE_V1.md"
+      - "pyproject.toml"
+      - ".github/workflows/stable-release.yml"
+      - ".github/workflows/release-provenance.yml"
+  pull_request:
+    paths:
+      - "src/modelriskops/api.py"
+      - "src/modelriskops/stability.py"
+      - "src/modelriskops/cli.py"
+      - "src/modelriskops/__init__.py"
+      - "tests/test_stability*.py"
+      - "compatibility/**"
+      - "schemas/stable-compatibility-policy.schema.json"
+      - "schemas/public-surface-manifest.schema.json"
+      - "schemas/supported-upgrade-path.schema.json"
+      - "schemas/independent-security-review-checklist.schema.json"
+      - "schemas/responsibility-scope.schema.json"
+      - "schemas/stable-release-baseline.schema.json"
+      - "security-review/**"
+      - "docs/STABLE_RELEASE.md"
+      - "docs/COMPATIBILITY.md"
+      - "docs/SECURITY_REVIEW.md"
+      - "docs/UPGRADE_V1.md"
+      - "pyproject.toml"
+      - ".github/workflows/stable-release.yml"
+      - ".github/workflows/release-provenance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  stable-release-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Install package
+        run: python -m pip install -e '.[dev]'
+      - name: Run v1 stability tests
+        run: python -m pytest tests/test_stability.py tests/test_stability_contracts.py -q
+      - name: Verify stable public contracts
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import tomllib
+          import jsonschema
+          import modelriskops
+          import modelriskops.api as api
+          from modelriskops.cli import STABLE_CLI_COMMANDS
+          from modelriskops.stability import REQUIRED_SECURITY_REVIEW_ITEMS, REQUIRED_V1_NON_CLAIMS
+
+          project = tomllib.load(open('pyproject.toml', 'rb'))
+          assert project['project']['version'] == '1.0.0'
+          assert modelriskops.__version__ == '1.0.0'
+
+          public = json.loads(Path('compatibility/v1-public-api.json').read_text())
+          assert public['release_version'] == '1.0.0'
+          assert public['python_api_symbols'] == list(api.__all__)
+          assert public['cli_commands'] == list(STABLE_CLI_COMMANDS)
+          assert public['python_api_symbols'] == sorted(public['python_api_symbols'])
+          assert public['cli_commands'] == sorted(public['cli_commands'])
+
+          schema_baseline = json.loads(Path('compatibility/v1-schema-baseline.json').read_text())
+          current = sorted(path.name for path in Path('schemas').glob('*.schema.json'))
+          assert schema_baseline['release_version'] == '1.0.0'
+          assert current == schema_baseline['schema_files']
+          assert len(current) == 65
+
+          stable_schemas = (
+              'stable-compatibility-policy.schema.json',
+              'public-surface-manifest.schema.json',
+              'supported-upgrade-path.schema.json',
+              'independent-security-review-checklist.schema.json',
+              'responsibility-scope.schema.json',
+              'stable-release-baseline.schema.json',
+          )
+          for filename in stable_schemas:
+              payload = json.loads((Path('schemas') / filename).read_text())
+              assert payload['$schema'] == 'https://json-schema.org/draft/2020-12/schema'
+              assert payload['additionalProperties'] is False
+              jsonschema.Draft202012Validator.check_schema(payload)
+
+          assert len(REQUIRED_SECURITY_REVIEW_ITEMS) == 12
+          assert tuple(sorted(REQUIRED_SECURITY_REVIEW_ITEMS)) == REQUIRED_SECURITY_REVIEW_ITEMS
+          assert len(REQUIRED_V1_NON_CLAIMS) == 9
+          assert tuple(sorted(REQUIRED_V1_NON_CLAIMS)) == REQUIRED_V1_NON_CLAIMS
+
+          review = json.loads(Path('schemas/independent-security-review-checklist.schema.json').read_text())
+          assert review['properties']['reviewer_independence_confirmed']['const'] is True
+          assert review['properties']['items']['minItems'] == 12
+          assert review['properties']['items']['maxItems'] == 12
+          upgrade = json.loads(Path('schemas/supported-upgrade-path.schema.json').read_text())
+          assert upgrade['properties']['source_series']['const'] == '0.8.x'
+          assert upgrade['properties']['target_version']['const'] == '1.0.0'
+          scope = json.loads(Path('schemas/responsibility-scope.schema.json').read_text())
+          assert scope['properties']['regulatory_compliance_determined']['const'] is False
+          assert scope['properties']['production_fitness_claimed']['const'] is False
+          PY
+      - name: Verify offline fail-closed v1 surface
+        shell: bash
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          banned = {'asyncio', 'ftplib', 'http', 'httpx', 'requests', 'socket', 'subprocess', 'telnetlib', 'urllib'}
+          for filename in ('src/modelriskops/api.py', 'src/modelriskops/stability.py'):
+              source = Path(filename).read_text(encoding='utf-8')
+              tree = ast.parse(source, filename=filename)
+              for node in ast.walk(tree):
+                  if isinstance(node, ast.Import):
+                      roots = {alias.name.split('.')[0] for alias in node.names}
+                  elif isinstance(node, ast.ImportFrom) and node.module:
+                      roots = {node.module.split('.')[0]}
+                  else:
+                      continue
+                  blocked = roots & banned
+                  if blocked:
+                      raise SystemExit(f'{filename}: forbidden capability import(s): {sorted(blocked)}')
+
+          source = Path('src/modelriskops/stability.py').read_text(encoding='utf-8')
+          required_markers = (
+              'v1 supports only the declared 0.8.x source series',
+              'reviewer independence must be explicitly confirmed by the reviewer',
+              'risk_acceptance_human_id',
+              'stable baseline must bind every governance boundary in canonical order',
+              'v0.8 source release is not registered in production history',
+              'supported upgrade path does not bind the exact v0.8 source release',
+              'supported upgrade path does not bind the exact v1 target release',
+              'independent security review cannot predate the exact v1 target release',
+              'stable baseline cannot predate bound readiness evidence',
+              'currentness check source release substitution detected',
+              'self.production_registry.assert_release_current(target_release)',
+          )
+          for marker in required_markers:
+              if marker not in source:
+                  raise SystemExit(f'missing v1 stability invariant: {marker}')
+          for marker in ('requests.', 'httpx.', 'subprocess.', '.connect(', '.deploy(', '.invoke(', '.predict(', '.fit('):
+              if marker in source:
+                  raise SystemExit(f'v1 stability core violates offline/non-executing boundary: {marker}')
+          PY
+      - name: Verify stable tag review blocker and provenance gate
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/release-provenance.yml').read_text(encoding='utf-8')
+          required = (
+              'security-review/v1.0-review.json',
+              'reviewer_independence_confirmed',
+              'risk_acceptance_human_id',
+              'risk_acceptance_digest',
+              'python -m build --wheel --outdir dist-a',
+              'python -m build --wheel --outdir dist-b',
+              'actions/attest@v4',
+          )
+          for marker in required:
+              if marker not in source:
+                  raise SystemExit(f'missing stable-tag/provenance invariant: {marker}')
+          PY
