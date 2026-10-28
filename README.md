@@ -2,6 +2,16 @@
 
 **Open model risk governance, validation, lifecycle controls and verifiable evidence for AI/ML systems in regulated environments.**
 
+## Executive overview — 30 seconds
+
+**Problem:** Organisations using AI/ML need clear model ownership, risk classification, independent validation and traceable evidence throughout the model lifecycle.
+
+**Reference solution:** Open governance contracts and evidence workflows for model inventory, review, change, approval and revalidation—not a substitute for human validators or production monitoring systems.
+
+**Inspect the work:** [Source code](src/) · [Automated tests](tests/) · [Machine-readable schemas](schemas/) · [Roadmap](README.md#roadmap).
+
+**Status and limits:** v1.0.0 **stable governance reference** at source/package-contract level. Formal stable tagging remains subject to a genuine independent security review. No claim of live model deployment, external audit or regulatory approval.
+
 ## Summary
 
 ModelRiskOps is an open-source reference architecture for governing analytical, statistical, machine-learning, AI and generative-AI systems through a controlled lifecycle: inventory, risk classification, independent validation, approval, monitoring, signed change/revalidation evidence, AI/GenAI overlays, portfolio/third-party risk, framework assurance mappings, tenant/cryptographic hardening and production-reference release evidence.
